@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC — Charts &amp; Trends</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="../../assets/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+    <div>
+      <div class="tb-title">Charts &amp; Trends</div>
+      <div class="tb-sub">Weekly or quarterly analysis · 2025–2026 · Volume, routes, cargo, outcomes</div>
+    </div>
+  </div>
+  <div class="tb-r">
+    <button class="btn btn-sm btn-ghost" onclick="resetFilters()">Reset</button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Controls bar -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-body" style="padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:12px;font-weight:700;color:var(--g600)">View by:</span>
+          <div style="display:flex;border:1px solid var(--g200);border-radius:6px;overflow:hidden">
+            <button id="btn-week" onclick="setViewMode('week')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--blue);color:#fff">Week</button>
+            <button id="btn-quarter" onclick="setViewMode('quarter')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#fff;color:var(--g700)">Quarter</button>
+          </div>
+          <span style="font-size:11px;color:var(--g400)">Quarter = 13 weeks (Q1=Wks 1–13, Q2=14–26, Q3=27–39, Q4=40–52)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:12px;font-weight:700;color:var(--g600)">Year:</span>
+          <select id="year-filter" onchange="onYearChange()" style="padding:5px 10px;border:1px solid var(--g200);border-radius:6px;font-size:12.5px;background:#fff;color:var(--g700);outline:none">
+            <option value="">Both (2025 + 2026)</option>
+            <option value="2025">2025 only</option>
+            <option value="2026" selected>2026 only</option>
+          </select>
+        </div>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
+          <input type="checkbox" id="tnc-only" onchange="rebuildCharts()" style="accent-color:var(--blue)">
+          <strong>TNC fixtures only</strong>
+        </label>
+        <div style="display:flex;align-items:center;gap:7px">
+          <span style="font-size:12px;font-weight:700;color:var(--g600)">Cargo:</span>
+          <select id="cargo-filter" onchange="rebuildCharts()" style="padding:5px 10px;border:1px solid var(--g200);border-radius:6px;font-size:12.5px;background:#fff;color:var(--g700);outline:none">
+            <option value="">All</option>
+            <option>CPP</option><option>ULSD</option><option>UMS</option><option>NAP</option><option>JET</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week / Quarter checkboxes -->
+  <div class="card" id="checks-card" style="margin-bottom:14px">
+    <div class="card-hdr">
+      <div><h3 id="checks-title">Weeks to Compare</h3><p id="checks-sub">Tick weeks on/off — charts update instantly</p></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-ghost" onclick="selectAll(true)">All</button>
+        <button class="btn btn-sm btn-ghost" onclick="selectAll(false)">None</button>
+      </div>
+    </div>
+    <div style="padding:10px 14px;display:flex;gap:6px 14px;flex-wrap:wrap" id="wk-checks"></div>
+  </div>
+
+  <!-- Summary KPIs (5 cards) -->
+  <div class="g5" style="margin-bottom:16px" id="sum-stats"></div>
+
+  <!-- Charts 2x2 -->
+  <div class="g2" style="margin-bottom:14px">
+    <div class="chart-card">
+      <div class="ch-hdr"><h3>Volume &amp; Fix Rate</h3><p>Bars = total fixtures · Line = % fixed</p></div>
+      <div class="ch-body"><canvas id="chart-volume"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-hdr"><h3>Top Route Destinations</h3><p>Fixtures per discharge region</p></div>
+      <div class="ch-body"><canvas id="chart-routes"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="chart-card">
+      <div class="ch-hdr"><h3>Cargo Mix</h3><p>Breakdown of cargo types per period</p></div>
+      <div class="ch-body"><canvas id="chart-cargo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="ch-hdr"><h3>Outcome Breakdown</h3><p>Fixed · On Subs · On Hold · Failed</p></div>
+      <div class="ch-body"><canvas id="chart-fixfail"></canvas></div>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 2;</script>
+<script src="../../assets/hist_data_2025.js"></script>
+<script src="../../assets/hist_data_2026.js"></script>
+<script src="../../assets/app.js"></script>
+<script>
+TNC.renderSidebar('compare');
+
+let viewMode = 'week';
+let selectedWeeks = new Set();
+let charts = {};
+const ALL_WEEKS_DATA = TNC.getWeeks();
+
+// ── Dedup (prevent double-counting same vessel in same week) ──────
+function dedup(fixtures) {
+  const seen = new Set();
+  return fixtures.filter(f => {
+    const k = (f.week||'') + '|' + (f.vessel||'').trim().toUpperCase();
+    if (seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+// ── Quarter helpers ───────────────────────────────────────────────
+function wkToQ(wk) {
+  const m = wk.match(/WEEK (\d+) (\d{4})/);
+  if (!m) return null;
+  const n = parseInt(m[1]), yr = m[2];
+  return 'Q' + (n<=13?1:n<=26?2:n<=39?3:4) + ' ' + yr;
+}
+
+function buildQuarterStats(tncOnly) {
+  const yr = document.getElementById('year-filter').value;
+  const weeks = yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA;
+  const wStats = TNC.buildWeekStats(weeks, tncOnly);
+  const B = {};
+  wStats.forEach(s => {
+    const q = wkToQ(s.week); if (!q) return;
+    if (!B[q]) B[q] = {week:q,label:q,hasData:false,isLive:false,total:0,fxd:0,fld:0,subs:0,hold:0,cpp:0,ulsd:0,ums:0,nap:0,jet:0,ta:0,cbs:0,ecm:0,ops:0,wcmex:0};
+    const b = B[q];
+    if (s.hasData||s.isLive) {
+      b.hasData=true; if(s.isLive) b.isLive=true;
+      ['total','fxd','fld','subs','hold','cpp','ulsd','ums','nap','jet','ta','cbs','ecm','ops','wcmex']
+        .forEach(k=>b[k]+=s[k]||0);
+    }
+  });
+  return Object.values(B).sort((a,b)=>a.label.localeCompare(b.label))
+    .map(b=>({...b, fixedPct: b.total ? Math.round(b.fxd/b.total*100):0}));
+}
+
+// ── Checkboxes ────────────────────────────────────────────────────
+function buildCheckboxes() {
+  const yr = document.getElementById('year-filter').value;
+  const weeksInView = yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA;
+
+  if (viewMode === 'quarter') {
+    document.getElementById('checks-title').textContent = 'Quarters to Compare';
+    document.getElementById('checks-sub').textContent = 'Each quarter covers 13 weeks';
+    const qs = [...new Set(weeksInView.map(wkToQ).filter(Boolean))].sort();
+    document.getElementById('wk-checks').innerHTML = qs.map(q=>`
+      <label class="ch-chk" style="min-width:90px">
+        <input type="checkbox" checked data-q="${q}" onchange="rebuildCharts()">
+        <strong>${q}</strong>
+      </label>`).join('');
+  } else {
+    document.getElementById('checks-title').textContent = 'Weeks to Compare';
+    document.getElementById('checks-sub').textContent = `${weeksInView.length} weeks available`;
+    document.getElementById('wk-checks').innerHTML = weeksInView.map(wk => {
+      const isLive = wk === TNC.LIVE_WEEK;
+      const n = parseInt(wk.match(/WEEK (\d+)/)?.[1]||0);
+      return `<label class="ch-chk" style="min-width:72px">
+        <input type="checkbox" value="${wk}" ${selectedWeeks.has(wk)?'checked':''} onchange="toggleWeek('${wk}',this.checked)">
+        <span>Wk ${n}${isLive?' <span class="badge b-live" style="font-size:9px;vertical-align:middle">LIVE</span>':''}</span>
+      </label>`;
+    }).join('');
+  }
+}
+
+function toggleWeek(wk, on) {
+  if(on) selectedWeeks.add(wk); else selectedWeeks.delete(wk);
+  rebuildCharts();
+}
+
+function selectAll(on) {
+  const yr = document.getElementById('year-filter').value;
+  const weeksInView = yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA;
+  if (viewMode === 'quarter') {
+    document.querySelectorAll('#wk-checks input').forEach(cb=>cb.checked=on);
+  } else {
+    selectedWeeks = on ? new Set(weeksInView) : new Set();
+  }
+  buildCheckboxes(); rebuildCharts();
+}
+
+function setViewMode(m) {
+  viewMode = m;
+  const bW=document.getElementById('btn-week'), bQ=document.getElementById('btn-quarter');
+  bW.style.cssText='padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:'+(m==='week'?'var(--blue)':'#fff')+';color:'+(m==='week'?'#fff':'var(--g700)');
+  bQ.style.cssText='padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:'+(m==='quarter'?'var(--blue)':'#fff')+';color:'+(m==='quarter'?'#fff':'var(--g700)');
+  buildCheckboxes(); rebuildCharts();
+}
+
+function onYearChange() {
+  const yr = document.getElementById('year-filter').value;
+  const weeksInView = yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA;
+  selectedWeeks = new Set(weeksInView);
+  buildCheckboxes(); rebuildCharts();
+}
+
+function resetFilters() {
+  document.getElementById('year-filter').value='2026';
+  document.getElementById('cargo-filter').value='';
+  document.getElementById('tnc-only').checked=false;
+  viewMode='week';
+  setViewMode('week');
+  const wks = ALL_WEEKS_DATA.filter(w=>w.includes('2026'));
+  selectedWeeks = new Set(wks);
+  buildCheckboxes(); rebuildCharts();
+}
+
+// ── Get stats for current state ───────────────────────────────────
+function getStats() {
+  const tncOnly = document.getElementById('tnc-only').checked;
+  const cargo   = document.getElementById('cargo-filter').value;
+
+  let stats;
+  if (viewMode === 'quarter') {
+    stats = buildQuarterStats(tncOnly);
+    // Filter by checked quarters
+    const checked = new Set([...document.querySelectorAll('#wk-checks input:checked')].map(cb=>cb.dataset.q));
+    stats = stats.filter(s=>checked.has(s.week));
+  } else {
+    stats = TNC.buildWeekStats([...selectedWeeks], tncOnly);
+  }
+
+  if (!cargo) return stats;
+  return stats.map(s => {
+    const wk = s.week;
+    let fx = viewMode==='quarter'
+      ? dedup(TNC.getHistorical().filter(f=>wkToQ(f.week)===wk))
+      : (wk===TNC.LIVE_WEEK ? TNC.getLive() : dedup([...TNC.getHistorical(),...TNC.getImported()].filter(f=>f.week===wk)));
+    fx = fx.filter(f=>(f.cargo||'').includes(cargo));
+    return {...s,total:fx.length,fxd:fx.filter(f=>f.status==='FXD').length,
+      fld:fx.filter(f=>['FLD','FAILED'].includes(f.status)).length,
+      subs:fx.filter(f=>f.status==='SUBS').length,hold:fx.filter(f=>f.status==='HOLD').length,
+      fixedPct:fx.length?Math.round(fx.filter(f=>f.status==='FXD').length/fx.length*100):0};
+  });
+}
+
+// ── Unique vessel count ───────────────────────────────────────────
+function uniqueVessels() {
+  const tncOnly = document.getElementById('tnc-only').checked;
+  const yr = document.getElementById('year-filter').value;
+  const weeksInView = viewMode==='quarter'
+    ? (yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA)
+    : [...selectedWeeks];
+  let fx = dedup([
+    ...TNC.getHistorical().filter(f=>weeksInView.includes(f.week)),
+    ...TNC.getLive()
+  ]);
+  if (tncOnly) fx = fx.filter(f=>f.tnc);
+  return new Set(fx.map(f=>(f.vessel||'').trim().toUpperCase()).filter(Boolean)).size;
+}
+
+// ── Chart defaults ────────────────────────────────────────────────
+const CFG = {
+  responsive:true,
+  plugins:{
+    legend:{position:'top',labels:{font:{size:11},boxWidth:12}},
+    tooltip:{backgroundColor:'rgba(10,22,40,0.9)',titleColor:'#fff',bodyColor:'rgba(255,255,255,0.75)'}
+  },
+  scales:{
+    y:{grid:{color:'rgba(0,0,0,0.05)'},ticks:{font:{size:11}}},
+    x:{grid:{color:'rgba(0,0,0,0.03)'},ticks:{font:{size:10},maxRotation:45}}
+  }
+};
+
+// ── Rebuild all charts ────────────────────────────────────────────
+function rebuildCharts() {
+  const stats = getStats();
+  const active = stats.filter(s=>s.hasData||s.isLive);
+  const prd = viewMode==='quarter' ? 'quarter' : 'week';
+
+  const tot = active.reduce((a,s)=>a+s.total,0);
+  const fxd = active.reduce((a,s)=>a+s.fxd,0);
+  const fld = active.reduce((a,s)=>a+s.fld,0);
+  const avgFix = active.filter(s=>s.total>0).length
+    ? Math.round(active.reduce((a,s)=>a+s.fixedPct,0)/active.filter(s=>s.total>0).length) : 0;
+  const vessels = uniqueVessels();
+
+  document.getElementById('sum-stats').innerHTML = [
+    {cls:'blue',   lbl:'Total Fixtures', val:tot.toLocaleString(),     sub:`across ${active.length} ${prd}s`},
+    {cls:'green',  lbl:'Fixed (FXD)',    val:fxd.toLocaleString(),     sub:`avg ${avgFix}% fix rate`},
+    {cls:'red',    lbl:'Failed',         val:fld.toLocaleString(),     sub:`${tot?Math.round(fld/tot*100):0}% of total`},
+    {cls:'purple', lbl:'Unique Vessels', val:vessels.toLocaleString(), sub:'distinct vessel names'},
+    {cls:'amber',  lbl:'Avg per '+prd[0].toUpperCase()+prd.slice(1), val:active.length?Math.round(tot/active.length):0, sub:'fixtures per '+prd},
+  ].map(({cls,lbl,val,sub})=>`<div class="stat-card ${cls}"><div class="stat-lbl">${lbl}</div><div class="stat-val">${val}</div><div class="stat-sub">${sub}</div></div>`).join('');
+
+  const labels = stats.map(s=>s.label);
+  const v = (s,k) => (s.hasData||s.isLive) ? s[k] : null;
+
+  Object.values(charts).forEach(c=>c.destroy()); charts={};
+
+  charts.volume = new Chart(document.getElementById('chart-volume'),{
+    data:{labels,datasets:[
+      {type:'bar',label:'Total Fixtures',data:stats.map(s=>v(s,'total')),backgroundColor:'rgba(37,99,235,0.72)',borderRadius:3,yAxisID:'y'},
+      {type:'line',label:'Fix Rate %',data:stats.map(s=>v(s,'fixedPct')),borderColor:'#22c55e',tension:0.35,fill:false,pointRadius:4,pointBackgroundColor:'#22c55e',yAxisID:'y1'}
+    ]},
+    options:{...CFG,interaction:{mode:'index'},scales:{x:CFG.scales.x,
+      y:{...CFG.scales.y,title:{display:true,text:'Fixtures',font:{size:11}},min:0},
+      y1:{title:{display:true,text:'Fix Rate %',font:{size:11}},position:'right',max:100,min:0,grid:{drawOnChartArea:false},ticks:{font:{size:11},callback:v=>v+'%'}}}}
+  });
+
+  charts.routes = new Chart(document.getElementById('chart-routes'),{
+    type:'line',data:{labels,datasets:[
+      {label:'TA',   data:stats.map(s=>v(s,'ta')),   borderColor:'#2563eb',tension:0.3,fill:false,pointRadius:3},
+      {label:'CBS',  data:stats.map(s=>v(s,'cbs')),  borderColor:'#16a34a',tension:0.3,fill:false,pointRadius:3},
+      {label:'ECM',  data:stats.map(s=>v(s,'ecm')),  borderColor:'#d97706',tension:0.3,fill:false,pointRadius:3},
+      {label:'OPS',  data:stats.map(s=>v(s,'ops')),  borderColor:'#7c3aed',tension:0.3,fill:false,pointRadius:3},
+      {label:'WCMEX',data:stats.map(s=>v(s,'wcmex')),borderColor:'#0891b2',tension:0.3,fill:false,pointRadius:3},
+    ]},
+    options:{...CFG,scales:{x:CFG.scales.x,y:{...CFG.scales.y,min:0,title:{display:true,text:'Fixtures',font:{size:11}}}}}
+  });
+
+  charts.cargo = new Chart(document.getElementById('chart-cargo'),{
+    type:'bar',data:{labels,datasets:[
+      {label:'CPP', data:stats.map(s=>v(s,'cpp')), backgroundColor:'#4ade80',stack:'a',borderRadius:2},
+      {label:'ULSD',data:stats.map(s=>v(s,'ulsd')),backgroundColor:'#fbbf24',stack:'a',borderRadius:2},
+      {label:'UMS', data:stats.map(s=>v(s,'ums')), backgroundColor:'#60a5fa',stack:'a',borderRadius:2},
+      {label:'NAP', data:stats.map(s=>v(s,'nap')), backgroundColor:'#f472b6',stack:'a',borderRadius:2},
+      {label:'JET', data:stats.map(s=>v(s,'jet')), backgroundColor:'#a78bfa',stack:'a',borderRadius:2},
+    ]},
+    options:{...CFG,scales:{x:{...CFG.scales.x,stacked:true},y:{...CFG.scales.y,stacked:true,title:{display:true,text:'Fixtures',font:{size:11}}}}}
+  });
+
+  charts.fixfail = new Chart(document.getElementById('chart-fixfail'),{
+    type:'bar',data:{labels,datasets:[
+      {label:'Fixed',   data:stats.map(s=>v(s,'fxd')), backgroundColor:'#4ade80',stack:'a',borderRadius:2},
+      {label:'On Subs', data:stats.map(s=>v(s,'subs')),backgroundColor:'#fbbf24',stack:'a',borderRadius:2},
+      {label:'On Hold', data:stats.map(s=>v(s,'hold')),backgroundColor:'#60a5fa',stack:'a',borderRadius:2},
+      {label:'Failed',  data:stats.map(s=>v(s,'fld')), backgroundColor:'#f87171',stack:'a',borderRadius:2},
+    ]},
+    options:{...CFG,scales:{x:{...CFG.scales.x,stacked:true},y:{...CFG.scales.y,stacked:true,title:{display:true,text:'Fixtures',font:{size:11}}}}}
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+const init2026 = ALL_WEEKS_DATA.filter(w=>w.includes('2026'));
+selectedWeeks = new Set(init2026);
+buildCheckboxes();
+rebuildCharts();
+</script>
+</body>
+</html>

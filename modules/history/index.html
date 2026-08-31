@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC — History Archive</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="../../assets/styles.css"/>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div>
+    <div>
+      <div class="tb-title">Historical Archive</div>
+      <div class="tb-sub">2025 &amp; 2026 · 75 weeks · Lazy-loads on expand</div>
+    </div>
+  </div>
+  <div class="tb-r">
+    <a href="../../modules/search/index.html" class="btn btn-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Full Search
+    </a>
+  </div>
+</header>
+
+<div class="content">
+  <div class="page-hero">
+    <h2>Historical Fixture Archive</h2>
+    <p>Browse all past weeks. Use the year filter to switch between 2025 and 2026, then click any week to expand it. Use the search box or other filters to narrow results.</p>
+    <div class="ph-meta">
+      <span>📅 Weeks 1–52 · 2025 &nbsp;|&nbsp; Weeks 1–23 · 2026</span>
+      <span>📦 <strong id="hist-total-count">—</strong> total fixtures</span>
+      <span>⚡ Rows load on demand for speed</span>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="hist-filter-bar">
+    <span class="hfb-title">Filter:</span>
+
+    <select id="hf-year" onchange="onYearChange()" style="padding:6px 10px;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;background:#fff;outline:none;color:var(--g700)">
+      <option value="">All Years</option>
+    </select>
+
+    <select id="hf-week" onchange="applyFilters()" style="padding:6px 10px;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;background:#fff;outline:none;color:var(--g700)">
+      <option value="">All Weeks</option>
+    </select>
+
+    <select id="hf-status" onchange="applyFilters()" style="padding:6px 10px;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;background:#fff;outline:none;color:var(--g700)">
+      <option value="">Any Status</option>
+      <option value="FXD">Fixed (FXD)</option>
+      <option value="SUBS">On Subs</option>
+      <option value="HOLD">On Hold</option>
+      <option value="FLD">Failed</option>
+    </select>
+
+    <select id="hf-cargo" onchange="applyFilters()" style="padding:6px 10px;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;background:#fff;outline:none;color:var(--g700)">
+      <option value="">Any Cargo</option>
+      <option>CPP</option><option>ULSD</option><option>UMS</option>
+      <option>NAP</option><option>JET</option><option>CHEMS</option>
+    </select>
+
+    <div class="srch-wrap" style="flex:1;min-width:180px">
+      <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="hf-q" placeholder="Vessel, charterer, load port…" oninput="applyFilters()" style="padding:6px 10px 6px 30px;width:100%;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;outline:none;color:var(--g900)"/>
+    </div>
+
+    <button class="btn btn-sm btn-ghost" onclick="clearFilters()">Clear all</button>
+    <span id="hf-result-note" style="font-size:11.5px;color:var(--g400)"></span>
+  </div>
+
+  <div id="history-weeks"></div>
+
+  <div id="hist-empty" class="empty-helpful" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+    <h4>No records match your filters</h4>
+    <p>Try clearing the filters or using the <a href="../../modules/search/index.html">Search page</a> for cross-year queries.</p>
+    <div class="empty-actions"><button class="btn btn-sm" onclick="clearFilters()">Clear Filters</button></div>
+  </div>
+</div>
+</div>
+</div>
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 2;</script>
+<script src="../../assets/hist_data_2025.js"></script>
+<script src="../../assets/hist_data_2026.js"></script>
+<script src="../../assets/app.js"></script>
+<script>
+TNC.renderSidebar('history');
+
+// ── Data & state ─────────────────────────────────────────────────
+const hist = TNC.getHistorical();
+document.getElementById('hist-total-count').textContent = hist.length.toLocaleString();
+
+// Sorted week list (all historical, no live week)
+const ALL_WEEKS = TNC.getWeeks().filter(w => w !== TNC.LIVE_WEEK);
+
+// Track which week sections have had rows rendered (lazy)
+const rendered = new Set();
+
+// ── Helper: format week label for display ─────────────────────────
+function fmtWk(wk) {
+  const m = wk.match(/WEEK (\d+)(?: (\d{4}))?/);
+  if (!m) return wk;
+  return `Week ${parseInt(m[1])}${m[2] ? ' · ' + m[2] : ''}`;
+}
+
+// ── Populate dropdowns ────────────────────────────────────────────
+const years = [...new Set(ALL_WEEKS.map(w => w.match(/\d{4}/)?.[0]).filter(Boolean))].sort();
+const yearSel = document.getElementById('hf-year');
+yearSel.innerHTML = '<option value="">All Years</option>';
+years.forEach(yr => {
+  const o = document.createElement('option');
+  o.value = yr; o.textContent = yr;
+  yearSel.appendChild(o);
+});
+yearSel.value = years[years.length - 1]; // default: most recent year
+
+function populateWeekDropdown(yr) {
+  const sel = document.getElementById('hf-week');
+  sel.innerHTML = '<option value="">All Weeks</option>';
+  const wks = yr ? ALL_WEEKS.filter(w => w.includes(yr)) : ALL_WEEKS;
+  wks.forEach(w => {
+    const o = document.createElement('option');
+    o.value = w;
+    const n = parseInt(w.match(/WEEK (\d+)/)?.[1] || 0);
+    o.textContent = `Week ${n} ${w.match(/\d{4}/)?.[0] || ''}`;
+    sel.appendChild(o);
+  });
+}
+populateWeekDropdown(yearSel.value);
+
+function onYearChange() {
+  populateWeekDropdown(document.getElementById('hf-year').value);
+  document.getElementById('hf-week').value = '';
+  rendered.clear();
+  buildWeekHeaders();
+  applyFilters();
+}
+
+// ── Build skeleton headers (no row data yet) ──────────────────────
+function buildWeekHeaders() {
+  const yr = document.getElementById('hf-year').value;
+  const weeksToShow = yr ? ALL_WEEKS.filter(w => w.includes(yr)) : ALL_WEEKS;
+
+  document.getElementById('history-weeks').innerHTML = weeksToShow.map((wk, wi) => {
+    const wkIdx = ALL_WEEKS.indexOf(wk); // stable index across all weeks
+    const rows = hist.filter(r => r.week === wk);
+    const fxd = rows.filter(r => r.status === 'FXD').length;
+    const fld = rows.filter(r => ['FLD','FAILED'].includes(r.status)).length;
+    const subs = rows.filter(r => r.status === 'SUBS').length;
+    return `<div class="hist-wk" id="hw-section-${wkIdx}">
+      <div class="hw-hdr" onclick="toggleWeek(${wkIdx},'${wk}')">
+        <div>
+          <h4>${fmtWk(wk)}</h4>
+          <p id="hw-count-${wkIdx}">${rows.length} fixture${rows.length!==1?'s':''}</p>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <span class="badge b-fxd">${fxd} Fixed</span>
+          ${fld ? `<span class="badge b-fld">${fld} Failed</span>` : ''}
+          ${subs ? `<span class="badge b-subs">${subs} Subs</span>` : ''}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;color:var(--g400);flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="hw-body" id="hw-body-${wkIdx}">
+        <div class="hw-stats" id="hw-stats-${wkIdx}"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Window</th><th>Vessel</th>
+              <th title="CNR = Charterer Not Reported">Charterer</th>
+              <th>Cargo</th><th>Load Port</th><th>Destination</th>
+              <th title="WS points or USD/MT">Rate</th>
+              <th title="FXD=Fixed, SUBS=On Subs, FLD=Failed">Status</th>
+              <th>TNC</th>
+            </tr></thead>
+            <tbody id="hw-tbody-${wkIdx}">
+              <tr><td colspan="9" style="padding:14px 12px;color:var(--g400);font-size:12px;font-style:italic">Click to expand and load rows…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Toggle expand — lazy renders rows on first open ───────────────
+function toggleWeek(wkIdx, wk) {
+  const body = document.getElementById(`hw-body-${wkIdx}`);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+
+  if (!isOpen && !rendered.has(wkIdx)) {
+    // First expand — render rows now
+    const rows = getFilteredRows(wk);
+    renderRows(wkIdx, wk, rows);
+    rendered.add(wkIdx);
+  }
+}
+
+// ── Get rows for a week applying active filters ───────────────────
+function getFilteredRows(wk) {
+  const fs = document.getElementById('hf-status').value;
+  const fc = document.getElementById('hf-cargo').value;
+  const fq = (document.getElementById('hf-q').value || '').toLowerCase().trim();
+
+  let rows = hist.filter(r => r.week === wk);
+  if (fs) rows = rows.filter(r => r.status === fs || (fs === 'FLD' && ['FLD','FAILED'].includes(r.status)));
+  if (fc) rows = rows.filter(r => (r.cargo || '').includes(fc));
+  if (fq) rows = rows.filter(r => [r.vessel, r.charterer, r.cargo, r.load, r.discharge, r.window].some(v => (v||'').toLowerCase().includes(fq)));
+  return rows;
+}
+
+// ── Render rows into a week section ──────────────────────────────
+function renderRows(wkIdx, wk, rows) {
+  const tbody  = document.getElementById(`hw-tbody-${wkIdx}`);
+  const countEl = document.getElementById(`hw-count-${wkIdx}`);
+  const statsEl = document.getElementById(`hw-stats-${wkIdx}`);
+  if (!tbody) return;
+
+  const fxd  = rows.filter(r => r.status === 'FXD').length;
+  const fld  = rows.filter(r => ['FLD','FAILED'].includes(r.status)).length;
+  const subs = rows.filter(r => r.status === 'SUBS').length;
+  const cpp  = rows.filter(r => (r.cargo||'').includes('CPP')).length;
+  const ulsd = rows.filter(r => (r.cargo||'').includes('ULSD')).length;
+
+  if (countEl) countEl.textContent = `${rows.length} fixture${rows.length!==1?'s':''}`;
+  if (statsEl) statsEl.innerHTML = `
+    <div class="hs-i">Total: <strong>${rows.length}</strong></div>
+    <div class="hs-i">Fixed: <strong>${fxd}</strong></div>
+    <div class="hs-i">Failed: <strong>${fld}</strong></div>
+    <div class="hs-i">On Subs: <strong>${subs}</strong></div>
+    <div class="hs-i">CPP: <strong>${cpp}</strong></div>
+    <div class="hs-i">ULSD: <strong>${ulsd}</strong></div>
+    <div class="hs-i">Fix rate: <strong>${rows.length ? Math.round(fxd/rows.length*100) : 0}%</strong></div>`;
+
+  const na = v => (!v || v === 'N/A') ? '—' : TNC.esc(v);
+  const shown = rows.slice(0, 150);
+  tbody.innerHTML = shown.map(r => {
+    const chips = TNC.renderTagChips(r.id, true);
+    return `<tr>
+      <td class="td-m">${TNC.esc(r.window)||'—'}</td>
+      <td class="td-v">${TNC.esc(r.vessel)}${chips ? `<span style="margin-left:4px">${chips}</span>` : ''}</td>
+      <td class="td-m">${na(r.charterer)}</td>
+      <td>${TNC.cargoBadge(r.cargo)}</td>
+      <td class="td-m">${na(r.load)}</td>
+      <td class="td-m" title="${TNC.esc(r.discharge)}">${na(r.discharge)}</td>
+      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${TNC.esc(r.rate)}">${na(r.rate)}</td>
+      <td>${TNC.statusBadge(r.status)}</td>
+      <td>${r.tnc ? '<span class="badge b-tnc" style="font-size:9px">TNC</span>' : ''}</td>
+    </tr>`;
+  }).join('');
+
+  if (rows.length > 150) {
+    tbody.innerHTML += `<tr><td colspan="9" style="padding:9px 12px;font-size:11.5px;color:var(--g400)">
+      Showing 150 of ${rows.length} — <a href="../../modules/search/index.html" style="color:var(--blue)">use Search</a> to see all</td></tr>`;
+  }
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" style="padding:14px 12px;color:var(--g400);font-size:12px;text-align:center">No fixtures match the current filters for this week</td></tr>`;
+  }
+}
+
+// ── Apply filters (show/hide week sections + re-render open ones) ─
+function applyFilters() {
+  const fy = document.getElementById('hf-year').value;
+  const fw = document.getElementById('hf-week').value;
+  const fs = document.getElementById('hf-status').value;
+  const fc = document.getElementById('hf-cargo').value;
+  const fq = (document.getElementById('hf-q').value || '').toLowerCase().trim();
+  const hasFilter = fy || fw || fs || fc || fq;
+
+  let shown = 0, totalRows = 0;
+
+  ALL_WEEKS.forEach((wk, wkIdx) => {
+    const section = document.getElementById(`hw-section-${wkIdx}`);
+    if (!section) return;
+
+    // Year and week selectors control visibility
+    const yearMatch = !fy || wk.includes(fy);
+    const weekMatch = !fw || wk === fw;
+    if (!yearMatch || !weekMatch) { section.style.display = 'none'; return; }
+
+    // Check if any rows match content filters
+    const rows = getFilteredRows(wk);
+    if (rows.length === 0 && (fs || fc || fq)) {
+      section.style.display = 'none'; return;
+    }
+
+    section.style.display = '';
+    shown++;
+    totalRows += rows.length;
+
+    // If this week is expanded AND it was already rendered, re-render with new filter
+    const body = document.getElementById(`hw-body-${wkIdx}`);
+    if (body && body.classList.contains('open')) {
+      renderRows(wkIdx, wk, rows);
+      rendered.add(wkIdx);
+    } else if (rendered.has(wkIdx)) {
+      // Was rendered before but filters changed — mark dirty so it re-renders on next open
+      rendered.delete(wkIdx);
+    }
+
+    // Auto-expand single matching week when week filter is set
+    if (fw && rows.length > 0 && body && !body.classList.contains('open')) {
+      body.classList.add('open');
+      renderRows(wkIdx, wk, rows);
+      rendered.add(wkIdx);
+    }
+  });
+
+  const note = document.getElementById('hf-result-note');
+  note.textContent = hasFilter && (fs || fc || fq)
+    ? `${totalRows.toLocaleString()} fixture${totalRows!==1?'s':''} across ${shown} week${shown!==1?'s':''}`
+    : shown < ALL_WEEKS.length ? `Showing ${shown} of ${ALL_WEEKS.length} weeks` : '';
+
+  document.getElementById('hist-empty').style.display = (shown === 0 && hasFilter) ? 'block' : 'none';
+}
+
+function clearFilters() {
+  document.getElementById('hf-year').value = years[years.length-1];
+  document.getElementById('hf-week').value = '';
+  document.getElementById('hf-status').value = '';
+  document.getElementById('hf-cargo').value = '';
+  document.getElementById('hf-q').value = '';
+  populateWeekDropdown(years[years.length-1]);
+  rendered.clear();
+  buildWeekHeaders();
+  applyFilters();
+}
+
+// ── Init ──────────────────────────────────────────────────────────
+buildWeekHeaders();
+applyFilters();
+</script>
+</body>
+</html>

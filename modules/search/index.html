@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC — Search All Fixtures</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="../../assets/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+    <div>
+      <div class="tb-title">Search — All Fixtures</div>
+      <div class="tb-sub">2025 &amp; 2026 · 75 weeks · 20,000+ fixtures loaded · Use filters to narrow</div>
+    </div>
+  </div>
+  <div class="tb-r">
+    <button class="btn btn-sm" onclick="exportResults()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export to Excel
+    </button>
+  </div>
+</header>
+
+<div class="content">
+
+  <div class="help-text info-banner" style="margin-bottom:14px">
+    <svg class="ib-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+    <div class="ib-body">
+      <h4>All fixtures are shown by default</h4>
+      <p>Use the filters below to narrow the list. You can filter by vessel name, week, cargo, status, load port, destination, or your own tags. Leave everything blank to see all records.</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-panel">
+    <div class="filter-panel-hdr">
+      <div><h3>Filters</h3><p>All fields optional — combine as many as you like</p></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer"><input type="checkbox" id="stnconly" onchange="runSearch()" style="accent-color:var(--blue)"> <strong>TNC fixtures only</strong></label>
+        <button class="btn btn-sm btn-ghost" onclick="clearSearch()">Clear all filters</button>
+      </div>
+    </div>
+    <div class="fgrid c3" style="margin-bottom:12px">
+      <div class="fg">
+        <label>Search by vessel, charterer, or route</label>
+        <div class="srch-wrap">
+          <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="sq" placeholder="e.g. ORVANE TIDE, VANTOR, CBS…" oninput="runSearch()" style="padding-left:30px"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label>Week</label>
+        <select class="fc" id="sw" onchange="runSearch()"><option value="">All weeks</option></select>
+      </div>
+      <div class="fg">
+        <label>Cargo Type</label>
+        <select class="fc" id="sc" onchange="runSearch()">
+          <option value="">All cargo</option>
+          <option>CPP</option><option>ULSD</option><option>UMS</option>
+          <option>NAP</option><option>JET</option><option>CHEMS</option><option>MTBE</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Status <span style="font-size:10px;color:var(--g400)">(FXD=Fixed, SUBS=On Subjects, FLD=Failed)</span></label>
+        <select class="fc" id="ss" onchange="runSearch()">
+          <option value="">All</option>
+          <option value="FXD">Fixed (FXD)</option>
+          <option value="SUBS">On Subjects (SUBS)</option>
+          <option value="HOLD">On Hold</option>
+          <option value="FLD">Failed (FLD)</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>Load Port</label>
+        <select class="fc" id="sl" onchange="runSearch()"><option value="">Any port</option></select>
+      </div>
+      <div class="fg">
+        <label>Destination / Discharge</label>
+        <select class="fc" id="sd" onchange="runSearch()">
+          <option value="">Any route</option>
+          <option>TA</option><option>CBS</option><option>ECM</option><option>OPS</option>
+          <option>WCMEX</option><option>BRZ</option><option>WAF</option><option>PERU</option>
+          <option>CHILE</option><option>ECSA</option><option>USWC</option><option>USAC</option>
+        </select>
+      </div>
+    </div>
+    <!-- Tag / category filter row -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--g100)">
+      <span style="font-size:11.5px;font-weight:600;color:var(--g600)">My Tags:</span>
+      <select class="fsel" id="s-category" onchange="runSearch()">
+        <option value="">Any category</option>
+      </select>
+      <span style="font-size:11px;color:var(--g400)">Tags let you organize fixtures by adding your own labels — click any fixture row to add tags.</span>
+    </div>
+  </div>
+
+  <!-- Result count bar -->
+  <div class="result-count-bar">
+    <span class="rcount">Showing <em id="srch-cnt">—</em> fixtures <span id="srch-limit-note" style="color:var(--amber);font-size:12px"></span></span>
+    <span style="font-size:11px;color:var(--g400)" id="srch-info"></span>
+  </div>
+
+  <!-- Results table -->
+  <div class="table-card">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Week</th>
+          <th title="The date window this fixture was active">Window</th>
+          <th>Vessel</th>
+          <th title="CNR = Charterer Not Reported">Charterer</th>
+          <th title="Cargo type — CPP, ULSD, UMS, NAP, JET, etc.">Cargo</th>
+          <th title="MT = Metric Tons (vessel size)">MT</th>
+          <th title="Load port — where the vessel picks up cargo">Load Port</th>
+          <th title="Destination / discharge port">Destination</th>
+          <th title="Rate — WS points or USD/MT. RNR = Rate Not Reported">Rate</th>
+          <th title="FXD=Fixed, SUBS=On Subjects, HOLD=On Hold, FLD=Failed">Status</th>
+          <th title="Your custom labels">Tags</th>
+        </tr></thead>
+        <tbody id="srch-tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty-helpful" id="srch-empty" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h4>No fixtures match those filters</h4>
+      <p>Try clearing some filters or widening your search. All <strong id="srch-empty-total">—</strong> fixtures are available when no filters are active.</p>
+      <div class="empty-actions"><button class="btn btn-sm" onclick="clearSearch()">Clear all filters</button></div>
+    </div>
+  </div>
+
+  <!-- Tag editor (appears below clicked row) -->
+  <div id="tag-editor-row" style="display:none;background:#f0f4ff;border:1px solid #bfdbfe;border-radius:var(--rl);padding:16px;margin-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <strong style="font-size:13px;color:var(--navy)">Add Tags &amp; Category</strong>
+        <div style="font-size:11px;color:var(--g500);margin-top:2px">for: <span id="tag-editor-vessel" style="font-weight:600"></span></div>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="closeTagEditor()">Done</button>
+    </div>
+    <div class="te-row">
+      <span class="te-label">Category</span>
+      <div class="te-preset-btns" id="te-cats"></div>
+    </div>
+    <div class="te-row">
+      <span class="te-label">Custom Tag</span>
+      <input class="te-tag-input" id="te-custom-input" placeholder="Type a tag, press Enter" onkeydown="handleCustomTag(event)"/>
+      <div id="te-custom-chips" class="tag-chips-row" style="flex:1;flex-wrap:wrap;gap:4px;margin-left:8px"></div>
+    </div>
+    <div class="te-row" style="align-items:flex-start">
+      <span class="te-label" style="margin-top:8px">Note</span>
+      <textarea id="te-note-ta" class="fc" rows="2" placeholder="Add a note about this fixture…" style="flex:1;resize:vertical"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-primary btn-sm" onclick="saveTagEdits()">Save Tags</button>
+      <button class="btn btn-danger btn-sm" onclick="clearTagEdits()">Clear All Tags</button>
+    </div>
+  </div>
+
+</div>
+</div>
+</div>
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 2;</script>
+<script src="../../assets/hist_data_2025.js"></script>
+<script src="../../assets/hist_data_2026.js"></script>
+<script src="../../assets/app.js"></script>
+<script>
+TNC.renderSidebar('search');
+
+// Populate week dropdown
+const weeks = TNC.getWeeks();
+const weekSel = document.getElementById('sw');
+weeks.forEach(w=>{
+  const o=document.createElement('option');
+  o.value=w; o.textContent=w+(w===TNC.LIVE_WEEK?' (Live)':'');
+  weekSel.appendChild(o);
+});
+
+// Populate load ports
+const loads = [...new Set(TNC.getAll().map(f=>f.load).filter(v=>v&&v!=='N/A'))].sort();
+const loadSel = document.getElementById('sl');
+loads.forEach(l=>{const o=document.createElement('option');o.value=l;o.textContent=l;loadSel.appendChild(o);});
+
+// Populate category dropdown for tag filter
+const catSel = document.getElementById('s-category');
+TNC.PRESET_CATEGORIES.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+
+// Total fixture count for empty state
+document.getElementById('srch-empty-total').textContent = TNC.getAll().length.toLocaleString();
+
+const WK_COLORS = {
+  'WEEK 16':'background:#ede9fe;color:#4c1d95','WEEK 17':'background:#dbeafe;color:#1e3a8a',
+  'WEEK 18':'background:#d1fae5;color:#065f46','WEEK 19':'background:#fef3c7;color:#92400e',
+  'WEEK 20':'background:#fce7f3;color:#9d174d','WEEK 21':'background:#e0f2fe;color:#075985',
+  'WEEK 22':'background:#f3f4f6;color:#374151','WEEK 23':'background:#dcfce7;color:#15803d'
+};
+
+let lastResults = [];
+let tagEditFixtureId = null;
+
+function runSearch() {
+  const q  = (document.getElementById('sq').value||'').toLowerCase().trim();
+  const fw = document.getElementById('sw').value;
+  const fc = document.getElementById('sc').value;
+  const fs = document.getElementById('ss').value;
+  const fl = document.getElementById('sl').value;
+  const fd = document.getElementById('sd').value;
+  const fcat = document.getElementById('s-category').value;
+  const tncOnly = document.getElementById('stnconly')?.checked;
+
+  const all = tncOnly ? TNC.getTNCAll() : TNC.getAll();
+  const allTagData = TNC.getAllTagData();
+
+  const res = all.filter(r=>{
+    if (q && ![r.vessel,r.charterer,r.cargo,r.load,r.discharge,r.rate,r.window,r.laycan,r.notes].some(v=>(v||'').toLowerCase().includes(q))) return false;
+    if (fw && r.week!==fw) return false;
+    if (fc && !(r.cargo||'').includes(fc)) return false;
+    if (fs) { if (fs==='FLD') { if (!['FLD','FAILED'].includes(r.status)) return false; } else if (r.status!==fs) return false; }
+    if (fl && !(r.load||'').includes(fl)) return false;
+    if (fd && !(r.discharge||'').includes(fd)) return false;
+    if (fcat) {
+      const td = allTagData[r.id];
+      if (!td || td.category !== fcat) return false;
+    }
+    return true;
+  });
+
+  lastResults = res;
+  const shown = res.slice(0, 500);
+  const isFiltered = q||fw||fc||fs||fl||fd||fcat||tncOnly;
+
+  document.getElementById('srch-cnt').textContent = res.length.toLocaleString();
+  document.getElementById('srch-info').textContent = isFiltered ? `Filtered from ${all.length.toLocaleString()} total` : `${all.length.toLocaleString()} total records`;
+  document.getElementById('srch-limit-note').textContent = res.length > 500 ? ' (showing first 500 — use more filters to narrow)' : '';
+  document.getElementById('srch-empty').style.display = (res.length===0) ? 'block' : 'none';
+
+  const na = v=>(!v||v==='N/A')?'—':TNC.esc(v);
+  document.getElementById('srch-tbody').innerHTML = shown.map(r=>{
+    const ws = WK_COLORS[r.week]||'background:#f3f4f6;color:#374151';
+    const tagChips = TNC.renderTagChips(r.id);
+    const td = allTagData[r.id];
+    const hasTags = td && (td.category || td.tags?.length || td.userNote);
+    return `<tr onclick="openTagEditor('${r.id}','${TNC.esc(r.vessel)}')" style="cursor:pointer" title="Click to add tags or notes">
+      <td><span class="badge" style="${ws}">${TNC.esc(r.week)}${r.isLive?' ★':''}</span></td>
+      <td class="td-m">${TNC.esc(r.window)||'—'}</td>
+      <td class="td-v">${TNC.esc(r.vessel)}</td>
+      <td class="td-m">${na(r.charterer)}</td>
+      <td>${TNC.cargoBadge(r.cargo)}</td>
+      <td class="td-m">${r.mt||'—'}</td>
+      <td class="td-m">${na(r.load)}</td>
+      <td class="td-m" title="${TNC.esc(r.discharge)}">${na(r.discharge)}</td>
+      <td style="font-size:12px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${TNC.esc(r.rate)}">${na(r.rate)}</td>
+      <td>${TNC.statusBadge(r.status)}</td>
+      <td>${tagChips || `<span style="font-size:10px;color:var(--g300)">+ add tag</span>`}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Tag editor ────────────────────────────────────────────
+function openTagEditor(fixtureId, vesselName) {
+  tagEditFixtureId = fixtureId;
+  document.getElementById('tag-editor-vessel').textContent = vesselName;
+  const data = TNC.getTagData(fixtureId);
+
+  // Build category buttons
+  const catContainer = document.getElementById('te-cats');
+  catContainer.innerHTML = TNC.PRESET_CATEGORIES.map(cat=>{
+    const col = TNC.TAG_COLORS[cat]||'#f3f4f6;color:#374151';
+    const active = data.category===cat;
+    return `<button class="te-preset-btn${active?' active':''}" style="background:${col};${active?'border-color:rgba(0,0,0,.3)':''}" onclick="toggleCategory('${cat}')">${cat}</button>`;
+  }).join('');
+
+  // Build custom chips
+  renderCustomChips(data.tags||[]);
+
+  document.getElementById('te-note-ta').value = data.userNote||'';
+  document.getElementById('te-custom-input').value = '';
+
+  const editorRow = document.getElementById('tag-editor-row');
+  editorRow.style.display = 'block';
+  editorRow.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function toggleCategory(cat) {
+  if (!tagEditFixtureId) return;
+  const data = TNC.getTagData(tagEditFixtureId);
+  data.category = data.category===cat ? '' : cat;
+  TNC.saveTagData(tagEditFixtureId, data);
+  openTagEditor(tagEditFixtureId, document.getElementById('tag-editor-vessel').textContent);
+}
+
+function renderCustomChips(tags) {
+  document.getElementById('te-custom-chips').innerHTML = tags.map(t=>`
+    <span class="tag-chip" style="background:#e5e7eb;color:#374151;font-size:11px;padding:3px 9px;cursor:pointer" onclick="removeCustomTag('${TNC.esc(t)}')" title="Click to remove">${TNC.esc(t)} ×</span>`).join('');
+}
+
+function handleCustomTag(e) {
+  if (e.key!=='Enter') return;
+  const val = e.target.value.trim();
+  if (!val||!tagEditFixtureId) return;
+  const data = TNC.getTagData(tagEditFixtureId);
+  if (!data.tags) data.tags=[];
+  if (!data.tags.includes(val)) data.tags.push(val);
+  TNC.saveTagData(tagEditFixtureId, data);
+  e.target.value='';
+  renderCustomChips(data.tags);
+}
+
+function removeCustomTag(tag) {
+  if (!tagEditFixtureId) return;
+  const data = TNC.getTagData(tagEditFixtureId);
+  data.tags = (data.tags||[]).filter(t=>t!==tag);
+  TNC.saveTagData(tagEditFixtureId, data);
+  renderCustomChips(data.tags);
+}
+
+function saveTagEdits() {
+  if (!tagEditFixtureId) return;
+  const data = TNC.getTagData(tagEditFixtureId);
+  data.userNote = document.getElementById('te-note-ta').value.trim();
+  TNC.saveTagData(tagEditFixtureId, data);
+  TNC.toast('Tags saved','success');
+  closeTagEditor();
+  runSearch();
+}
+
+function clearTagEdits() {
+  if (!tagEditFixtureId) return;
+  TNC.saveTagData(tagEditFixtureId, {category:'',tags:[],userNote:''});
+  TNC.toast('Tags cleared');
+  closeTagEditor();
+  runSearch();
+}
+
+function closeTagEditor() {
+  tagEditFixtureId = null;
+  document.getElementById('tag-editor-row').style.display='none';
+}
+
+function clearSearch() {
+  ['sq'].forEach(id=>{document.getElementById(id).value='';});
+  ['sw','sc','ss','sl','sd','s-category'].forEach(id=>{document.getElementById(id).value='';});
+  const cb = document.getElementById('stnconly');
+  if(cb) cb.checked=false;
+  closeTagEditor();
+  runSearch();
+}
+
+function exportResults() {
+  const data = lastResults.length ? lastResults : TNC.getAll();
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Week','Window','Vessel','Charterer','MT','Cargo','Laycan','Load','Discharge','Rate','Status','Notes','TNC','Category','Tags'],
+    ...data.map(r=>{
+      const td = TNC.getTagData(r.id);
+      return [r.week,r.window,r.vessel,r.charterer,r.mt,r.cargo,r.laycan,r.load,r.discharge,r.rate,r.status,r.notes||'',r.tnc?'Yes':'',td.category||'',(td.tags||[]).join(', ')];
+    })
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Fixtures');
+  XLSX.writeFile(wb, 'TNC_Fixtures_Export.xlsx');
+  TNC.toast(`Exported ${data.length} fixtures`);
+}
+
+// Load all fixtures immediately on page open
+runSearch();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+node_modules/
+
+# Never commit real fixture data or the private name list used to check for it
+private_names.json
+real_*.js
+*_real.js
+workbook*.xlsx
+*.csv
+
+*.log
+.DS_Store
+Thumbs.db

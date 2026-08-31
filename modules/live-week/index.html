@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC — Live Week 23</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="../../assets/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+    <div>
+      <div class="tb-title">Live Week — Week 23 · 2026</div>
+      <div class="tb-sub">Jun 2–8 · US Gulf Clean Market · Active tracking</div>
+    </div>
+  </div>
+  <div class="tb-r">
+    <button class="btn btn-sm" onclick="exportExcel()" title="Ctrl+E">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="openAddModal()" title="Open full form">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Form
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="startInlineNew()" title="N or + key">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Fixture
+    </button>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Week banner -->
+  <div class="week-banner">
+    <div class="wb-top">
+      <div><div class="wb-title">Week 23 · 2026 <span class="tag">LIVE</span></div><div class="wb-sub">Jun 2–8 · Window: May 31 – Jun 6</div></div>
+      <span class="wb-pill">US Gulf Clean Market</span>
+    </div>
+    <div class="week-kpis">
+      <div><div class="kpi-lbl">Total</div><div class="kpi-val" id="ws-tot">—</div><div class="kpi-sub">this window</div></div>
+      <div><div class="kpi-lbl">Fixed</div><div class="kpi-val" id="ws-fxd">—</div><div class="kpi-sub" style="color:#4ade80">confirmed</div></div>
+      <div><div class="kpi-lbl">Coverage</div><div class="kpi-val" id="ws-pct">—</div><div class="cov-bar"><div class="cov-fill" id="ws-bar" style="width:0%"></div></div></div>
+      <div><div class="kpi-lbl">Subs/Hold</div><div class="kpi-val" id="ws-pend">—</div><div class="kpi-sub">pending</div></div>
+      <div><div class="kpi-lbl">Signal</div><div class="kpi-val" id="ws-sig" style="font-size:14px;font-weight:700">—</div><div class="kpi-sub" id="ws-sig-sub">—</div></div>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="srch-wrap" style="flex:2">
+      <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="live-q" placeholder="Search vessel, charterer, route… (Ctrl+F)" oninput="renderLiveTable()"/>
+    </div>
+    <select class="fsel" id="live-cargo" onchange="renderLiveTable()">
+      <option value="">All cargo</option>
+      <option>CPP</option><option>ULSD</option><option>UMS</option>
+      <option>NAP</option><option>JET</option><option>CHEMS</option>
+    </select>
+    <select class="fsel" id="live-status" onchange="renderLiveTable()">
+      <option value="">All statuses</option>
+      <option value="FXD">Fixed</option><option value="SUBS">On Subs</option>
+      <option value="HOLD">On Hold</option><option value="FLD">Failed</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g500);cursor:pointer;white-space:nowrap">
+      <input type="checkbox" id="tnc-only" onchange="renderLiveTable()" style="accent-color:var(--green)"> TNC only
+    </label>
+    <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Quick-add NLP bar -->
+  <div class="quick-bar">
+    <span class="qb-spark">⚡</span>
+    <input class="qb-input" id="qa-input" type="text"
+      placeholder="Quick-add — paste fixture text: 'ORVANE TIDE VANTOR 38 CPP USG TA 157.5 FXD' — Enter to parse"
+      onkeydown="handleQAKey(event)"/>
+    <button class="qb-btn" onclick="runQA()">Parse</button>
+    <span class="qb-sep">·</span>
+    <button class="qb-new" onclick="startInlineNew()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Inline row
+    </button>
+  </div>
+
+  <!-- NLP parse preview -->
+  <div class="parse-preview" id="parse-preview">
+    <div class="pp-hdr"><h4>Parsed — review before adding</h4><span class="pp-tag">Quick Parse</span></div>
+    <div class="pp-fields" id="pp-fields"></div>
+    <div class="pp-actions">
+      <button class="btn btn-success btn-sm" onclick="confirmQA()">✓ Confirm &amp; Add</button>
+      <button class="btn btn-sm" onclick="editQA()">✏ Edit in form</button>
+      <button class="btn btn-ghost btn-sm" onclick="dismissQA()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Duplicate warning -->
+  <div class="dup-warning" id="dup-warning">
+    ⚠️ <span id="dup-warning-text">This vessel may already exist in Week 23. Review before adding.</span>
+    <button class="btn btn-xs btn-ghost" style="margin-left:auto" onclick="dismissDupWarning()">Dismiss</button>
+  </div>
+
+  <!-- Wrong-week laycan warning -->
+  <div class="dup-warning" id="ww-warning" style="border-color:rgba(59,130,246,.3);background:rgba(59,130,246,.08);color:var(--blue)">
+    ⚠️ <span id="ww-warning-text">Laycan month looks outside Week 23's range (May 31–Jun 8). Confirm this is correct.</span>
+    <button class="btn btn-xs btn-ghost" style="margin-left:auto" onclick="document.getElementById('ww-warning').classList.remove('show')">Dismiss</button>
+  </div>
+
+  <!-- Keyboard shortcuts bar -->
+  <div class="kb-bar">
+    <span class="kb-item"><kbd>N</kbd>/<kbd>+</kbd> new row</span>
+    <span class="kb-item"><kbd>Tab</kbd> next field</span>
+    <span class="kb-item"><kbd>↵</kbd> save &amp; next</span>
+    <span class="kb-item"><kbd>Esc</kbd> cancel</span>
+    <span class="kb-item">status: <kbd>F</kbd>FXD <kbd>S</kbd>SUBS <kbd>H</kbd>HOLD <kbd>X</kbd>FLD</span>
+    <span class="kb-item"><kbd>Ctrl+F</kbd> search</span>
+    <span class="kb-item"><kbd>Ctrl+E</kbd> export</span>
+    <span class="kb-item">dbl-click to edit · click for notes</span>
+  </div>
+
+  <!-- Main table -->
+  <div class="table-card">
+    <div class="tc-hdr">
+      <div class="tc-hdr-l">Showing <strong id="live-cnt">—</strong> fixtures</div>
+      <div class="tc-hdr-r" style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:10.5px;color:var(--green)">● TNC confirmed</span>
+        <span>🔵 = has notes · Dbl-click row to edit</span>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table id="live-table">
+        <thead><tr>
+          <th style="width:4px;padding:0" class="no-sort"></th>
+          <th onclick="sortLive('window')">Window</th>
+          <th onclick="sortLive('vessel')">Vessel</th>
+          <th onclick="sortLive('charterer')">Charterer</th>
+          <th onclick="sortLive('cargo')">Cargo</th>
+          <th onclick="sortLive('laycan')">Laycan</th>
+          <th onclick="sortLive('load')">Load</th>
+          <th onclick="sortLive('discharge')">Discharge</th>
+          <th onclick="sortLive('rate')">Rate</th>
+          <th onclick="sortLive('mt')">MT</th>
+          <th onclick="sortLive('status')">Status</th>
+          <th class="no-sort" style="width:78px">Actions</th>
+        </tr></thead>
+        <tbody id="live-tbody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="live-empty" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h4>No fixtures found</h4><p>Adjust filters or add a new fixture</p>
+    </div>
+  </div><!-- /table-card -->
+
+  <!-- AI Assistant Box (Planned Feature) -->
+  <div class="ai-box">
+    <div class="ai-box-hdr">
+      <span class="ai-box-icon">⚡</span>
+      <span class="ai-box-title">AI Assistant</span>
+      <span class="ai-box-badge">PLANNED</span>
+      <span class="ai-box-hint">Natural language queries — coming in a future version</span>
+    </div>
+    <div class="ai-input-wrap">
+      <input class="ai-box-input" id="ai-input" placeholder='Ask anything — e.g. "show all TNC fixtures from Week 21" or "compare TRAF routes across weeks"' disabled title="AI Assistant — planned feature, not yet active"/>
+      <button class="ai-box-btn" disabled>Ask AI</button>
+    </div>
+    <div class="ai-examples">
+      <span class="ai-examples-lbl">Try:</span>
+      <span class="ai-ex">"Show all TNC fixtures from Week 21"</span>
+      <span class="ai-ex">"Compare ULSD rates USG → TA across all weeks"</span>
+      <span class="ai-ex">"Which vessels have failed the most this year?"</span>
+      <span class="ai-ex">"What was the avg fix rate for Week 20 vs Week 23?"</span>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Add/Edit Modal -->
+<div class="modal-ov hidden" id="modal-ov" onclick="handleOvClick(event)">
+<div class="modal">
+  <div class="m-hdr">
+    <div><h3 id="m-title">Add Fixture</h3><p id="m-sub">Week 23 · 2026</p></div>
+    <button class="m-close" onclick="closeModal()">×</button>
+  </div>
+  <div class="m-body">
+    <input type="hidden" id="f-id"/>
+    <div class="del-box" id="del-box">
+      <p>⚠️ Delete this fixture permanently?</p>
+      <div class="del-btns">
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete()">Yes, Delete</button>
+        <button class="btn btn-sm" onclick="cancelDelete()">Cancel</button>
+      </div>
+    </div>
+    <!-- Duplicate warning in modal -->
+    <div class="dup-warning" id="modal-dup-warning" style="margin-bottom:12px"></div>
+    <div class="fgrid">
+      <div class="fsec">Fixture Details</div>
+      <div class="fg"><label>Vessel<span class="req">*</span></label><input class="fc" id="f-vessel" list="dl-vessels" autocomplete="off" placeholder="e.g. ORVANE TIDE" oninput="checkModalDup()"/></div>
+      <div class="fg"><label>Charterer</label><input class="fc" id="f-charterer" list="dl-charterers" autocomplete="off" placeholder="e.g. TRAF"/></div>
+      <div class="fg"><label>Cargo<span class="req">*</span></label>
+        <select class="fc" id="f-cargo"><option value="">Select…</option><option>CPP</option><option>ULSD</option><option>UMS</option><option>NAP</option><option>JET</option><option>CHEMS</option><option>MTBE</option><option>HSD</option><option>ISO</option><option>HVO</option></select>
+      </div>
+      <div class="fg"><label>MT</label><input class="fc" id="f-mt" placeholder="38"/></div>
+      <div class="fsec">Route &amp; Timing</div>
+      <div class="fg"><label>Load Port<span class="req">*</span></label><input class="fc" id="f-load" list="dl-loads" autocomplete="off" placeholder="e.g. USG"/></div>
+      <div class="fg"><label>Discharge<span class="req">*</span></label><input class="fc" id="f-discharge" list="dl-discharges" autocomplete="off" placeholder="e.g. TA"/></div>
+      <div class="fg"><label>Laycan</label><input class="fc" id="f-laycan" placeholder="e.g. 5-7 JUNE" oninput="checkLaycanWarning()"/></div>
+      <div class="fg"><label>Window</label><input class="fc" id="f-window" list="dl-windows" autocomplete="off" placeholder="e.g. 31-06"/></div>
+      <div class="fsec">Rate &amp; Status</div>
+      <div class="fg" style="position:relative"><label>Rate <span id="rate-fmt-badge" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(59,130,246,.12);color:var(--blue);margin-left:4px;display:none"></span></label><input class="fc" id="f-rate" placeholder="e.g. 157.5 or RNR" oninput="updateRateBadge()"/></div>
+      <div class="fg"><label>Status<span class="req">*</span></label>
+        <select class="fc" id="f-status"><option value="">Select…</option><option value="FXD">Fixed (FXD)</option><option value="SUBS">On Subs</option><option value="HOLD">On Hold</option><option value="FLD">Failed (FLD)</option></select>
+      </div>
+      <div class="fg full"><label>Notes</label><textarea class="fc" id="f-notes" placeholder="Rate context, flags, updates…"></textarea></div>
+    </div>
+  </div>
+  <div class="m-footer">
+    <div><button class="btn btn-danger btn-sm" id="del-btn" onclick="showDel()" style="display:none">Delete</button></div>
+    <div class="m-footer-r"><button class="btn btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveModal()">Save</button></div>
+  </div>
+</div>
+</div>
+
+<datalist id="dl-vessels"></datalist>
+<datalist id="dl-charterers"></datalist>
+<datalist id="dl-loads"></datalist>
+<datalist id="dl-discharges"></datalist>
+<datalist id="dl-windows">
+  <option>12-18</option><option>17-23</option><option>19-25</option>
+  <option>24-30</option><option>26-02</option><option>31-06</option><option>03-09</option><option>07-13</option><option>14-20</option>
+</datalist>
+
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 2;</script>
+<script src="../../assets/hist_data_2025.js"></script>
+<script src="../../assets/hist_data_2026.js"></script>
+<script src="../../assets/app.js"></script>
+<script>
+// ── State ──
+let sortKey = null, sortDir = 1;
+let inlineId = null;   // null = none; -1 = new row
+let openNotesId = null;
+let parsedFix = null;
+let modalEditId = null, delTargetId = null;
+const sMem = { load: 'USG', window: '31-06' }; // session defaults
+const INLINE_FIELDS = ['window','vessel','charterer','cargo','laycan','load','discharge','rate','mt','status'];
+
+// ── Init ──
+TNC.renderSidebar('live');
+TNC.fillDataLists();
+renderLiveTable();
+
+// ── Filter helpers ──
+function getLiveFiltered() {
+  const q   = (document.getElementById('live-q').value || '').toLowerCase().trim();
+  const fc  = document.getElementById('live-cargo').value;
+  const fs  = document.getElementById('live-status').value;
+  const tnc = document.getElementById('tnc-only').checked;
+  return TNC.getLive().filter(r => {
+    const mq  = !q  || [r.vessel,r.charterer,r.cargo,r.load,r.discharge,r.rate,r.window].some(v => (v||'').toLowerCase().includes(q));
+    const mc  = !fc || (r.cargo||'').includes(fc);
+    const ms  = !fs || r.status === fs || (fs === 'FLD' && ['FLD','FAILED'].includes(r.status));
+    const mt2 = !tnc || r.tnc;
+    return mq && mc && ms && mt2;
+  });
+}
+
+function clearFilters() {
+  document.getElementById('live-q').value = '';
+  document.getElementById('live-cargo').value = '';
+  document.getElementById('live-status').value = '';
+  document.getElementById('tnc-only').checked = false;
+  renderLiveTable();
+}
+
+// ── Render ──
+function renderLiveTable() {
+  const data = getLiveFiltered();
+  let sorted = [...data];
+  if (sortKey) sorted.sort((a, b) => {
+    const av = (a[sortKey]||'').toLowerCase();
+    const bv = (b[sortKey]||'').toLowerCase();
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
+  });
+
+  const live = TNC.getLive();
+  const fxd  = live.filter(r => r.status === 'FXD').length;
+  const tot  = live.length;
+  const pend = live.filter(r => r.status === 'SUBS' || r.status === 'HOLD').length;
+  const pct  = Math.round(fxd / 65 * 100); // 65 = target coverage
+  const sig  = pct < 60 ? 'Firm' : pct < 80 ? 'Active' : 'Covered';
+  const sigC = pct < 60 ? '#f59e0b' : pct < 80 ? '#3b82f6' : '#22c55e';
+
+  document.getElementById('ws-tot').textContent  = tot;
+  document.getElementById('ws-fxd').textContent  = fxd;
+  document.getElementById('ws-pend').textContent = pend;
+  document.getElementById('ws-pct').textContent  = pct + '%';
+  document.getElementById('ws-bar').style.width  = Math.min(pct, 100) + '%';
+  document.getElementById('ws-sig').textContent  = sig;
+  document.getElementById('ws-sig').style.color  = sigC;
+  document.getElementById('ws-sig-sub').textContent = pct < 60 ? 'High volume uncovered' : pct < 80 ? 'Market moving' : 'Well covered';
+  document.getElementById('live-cnt').textContent = sorted.length;
+
+  const tbody = document.getElementById('live-tbody');
+  document.getElementById('live-empty').style.display = 'none';
+
+  let rows = '';
+
+  // Placeholder or new inline row at top of table
+  if (inlineId === -1) {
+    rows += renderInlineRow(null);
+  } else {
+    rows += `<tr class="row-ph" onclick="startInlineNew()"><td style="width:4px;padding:0;background:transparent"></td><td colspan="11">
+      <div class="ph-txt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Click here or press <kbd style="background:var(--g100);border:1px solid var(--border-l);border-radius:3px;padding:0 4px;font-size:9.5px;font-family:monospace;color:var(--g600)">N</kbd> / <kbd style="background:var(--g100);border:1px solid var(--border-l);border-radius:3px;padding:0 4px;font-size:9.5px;font-family:monospace;color:var(--g600)">+</kbd> to add a fixture inline
+      </div></td></tr>`;
+  }
+
+  if (!sorted.length && inlineId !== -1) {
+    document.getElementById('live-empty').style.display = 'block';
+  }
+
+  rows += sorted.map(r => {
+    if (inlineId === r.id) return renderInlineRow(r);
+    const hn = r.notes && r.notes.trim().length > 0;
+    const nd = hn ? '<span class="note-dot" title="Has notes"></span>' : '';
+    const na = v => (v === 'N/A' || !v) ? '<span class="td-na">—</span>' : TNC.esc(v);
+    const tncBar = r.tnc ? 'background:var(--green)' : '';
+    const tagHtml = TNC.renderTagChips(r.id, true);
+    return `<tr id="row-${r.id}" ondblclick="startInlineEdit('${r.id}')" onclick="handleRowClick(event,'${r.id}')" style="cursor:pointer" title="Click for notes · Dbl-click to edit">
+      <td style="width:4px;padding:0;${tncBar}" title="${r.tnc?'TNC confirmed fixture':''}"></td>
+      <td class="td-m">${TNC.esc(r.window)||'—'}</td>
+      <td class="td-v">${TNC.esc(r.vessel)}${nd}${tagHtml?`<div style="margin-top:3px">${tagHtml}</div>`:''}</td>
+      <td class="td-m">${na(r.charterer)}</td>
+      <td>${TNC.cargoBadge(r.cargo)}</td>
+      <td class="td-m">${na(r.laycan)}</td>
+      <td class="td-m">${na(r.load)}</td>
+      <td class="td-m" title="${TNC.esc(r.discharge)}">${na(r.discharge)}</td>
+      <td style="font-size:12px;font-family:monospace">${!r.rate||r.rate==='N/A'||r.rate==='RNR'?'<span class="td-na">RNR</span>':TNC.esc(r.rate)}</td>
+      <td class="td-m">${r.mt||'—'}</td>
+      <td>${TNC.statusBadge(r.status)}</td>
+      <td><div class="td-acts" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-icon btn-ghost" title="Edit inline" onclick="startInlineEdit('${r.id}')">✏️</button>
+        <button class="btn btn-sm btn-icon btn-ghost" title="Full form" onclick="openEditModal('${r.id}')">📋</button>
+      </div></td>
+    </tr>
+    <tr class="notes-row" id="notes-row-${r.id}" style="display:none">
+      <td colspan="12">
+        <div class="annot-panel">
+          <div class="annot-tabs">
+            <button class="annot-tab active" onclick="switchAnnotTab('notes','${r.id}')">📝 Notes</button>
+            <button class="annot-tab" onclick="switchAnnotTab('tags','${r.id}')">🏷️ Tags &amp; Category</button>
+          </div>
+          <div class="annot-pane active" id="annot-notes-${r.id}">
+            <div class="notes-panel">
+              <span class="np-lbl">Notes</span>
+              <textarea class="np-ta" id="np-ta-${r.id}" placeholder="Private note about this fixture…">${TNC.esc(r.notes||'')}</textarea>
+              <div class="np-acts">
+                <button class="btn btn-primary btn-sm" onclick="saveNote('${r.id}');event.stopPropagation()">Save</button>
+                <button class="btn btn-sm" onclick="toggleNotes('${r.id}');event.stopPropagation()">Close</button>
+              </div>
+            </div>
+          </div>
+          <div class="annot-pane" id="annot-tags-${r.id}">
+            <div style="padding:10px 0 6px">
+              <div class="te-row">
+                <span class="te-label">Category</span>
+                <div class="te-preset-btns" id="lw-cats-${r.id}">
+                  ${TNC.PRESET_CATEGORIES.map(cat => {
+                    const col = TNC.TAG_COLORS[cat] || '#f3f4f6;color:#374151';
+                    const td  = TNC.getTagData(r.id);
+                    const active = td.category === cat;
+                    return `<button class="te-preset-btn${active?' active':''}" style="background:${col};${active?'border-color:rgba(255,255,255,.3)':''}" onclick="lwToggleCat('${r.id}','${cat}')">${cat}</button>`;
+                  }).join('')}
+                </div>
+              </div>
+              <div class="te-row">
+                <span class="te-label">Custom Tag</span>
+                <input class="te-tag-input" id="lw-tag-input-${r.id}" placeholder="Type, Enter to add" onkeydown="lwAddTag(event,'${r.id}')"/>
+                <div id="lw-chips-${r.id}" class="tag-chips-row" style="flex:1;margin-left:8px">
+                  ${(TNC.getTagData(r.id).tags||[]).map(t => `<span class="tag-chip" style="background:var(--g100);color:var(--g700);font-size:11px;padding:3px 9px;cursor:pointer" onclick="lwRemoveTag('${r.id}','${t}')" title="Remove">${TNC.esc(t)} ×</span>`).join('')}
+                </div>
+              </div>
+              <div style="margin-top:6px;display:flex;gap:6px">
+                <button class="btn btn-primary btn-sm" onclick="lwSaveTags('${r.id}')">Save Tags</button>
+                <button class="btn btn-sm btn-ghost" onclick="toggleNotes('${r.id}')">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+}
+
+// ── Inline row template ──
+function renderInlineRow(r) {
+  const isNew = !r;
+  const v = r || { window: sMem.window, vessel: '', charterer: '', mt: '38', cargo: 'CPP', laycan: '', load: sMem.load, discharge: '', rate: '', status: 'FXD' };
+  const co = ['CPP','ULSD','UMS','NAP','JET','CHEMS','MTBE','HSD','ISO','HVO','CSS'].map(c => `<option${v.cargo===c?' selected':''}>${c}</option>`).join('');
+  const so = ['FXD','SUBS','HOLD','FLD'].map(s => `<option${v.status===s?' selected':''}>${s}</option>`).join('');
+  return `<tr class="row-editing" id="row-${isNew?'new':r.id}">
+    <td style="width:4px;padding:0;background:var(--blue)"></td>
+    <td><input class="ii" id="ie-window" value="${TNC.esc(v.window)}" list="dl-windows" style="min-width:62px" onkeydown="hIEKey(event,'window')" tabindex="1"></td>
+    <td><input class="ii" id="ie-vessel" value="${TNC.esc(isNew?'':v.vessel)}" list="dl-vessels" placeholder="Vessel*" style="min-width:110px" onkeydown="hIEKey(event,'vessel')" oninput="checkInlineDup()" tabindex="2"></td>
+    <td><input class="ii" id="ie-charterer" value="${TNC.esc(v.charterer)}" list="dl-charterers" style="min-width:72px" onkeydown="hIEKey(event,'charterer')" tabindex="3"></td>
+    <td><select class="ii-sel" id="ie-cargo" onkeydown="hIEKey(event,'cargo')" tabindex="4">${co}</select></td>
+    <td><input class="ii" id="ie-laycan" value="${TNC.esc(v.laycan==='N/A'?'':v.laycan)}" placeholder="Laycan" style="min-width:65px" onkeydown="hIEKey(event,'laycan')" oninput="checkInlineLaycan()" tabindex="5"></td>
+    <td><input class="ii" id="ie-load" value="${TNC.esc(v.load)}" list="dl-loads" style="min-width:62px" onkeydown="hIEKey(event,'load')" tabindex="6"></td>
+    <td><input class="ii" id="ie-discharge" value="${TNC.esc(v.discharge==='N/A'?'':v.discharge)}" list="dl-discharges" style="min-width:75px" onkeydown="hIEKey(event,'discharge')" tabindex="7"></td>
+    <td><input class="ii" id="ie-rate" value="${TNC.esc(v.rate==='RNR'?'':v.rate)}" placeholder="RNR" style="min-width:75px;font-family:monospace" onkeydown="hIEKey(event,'rate')" tabindex="8"></td>
+    <td><input class="ii" id="ie-mt" value="${TNC.esc(v.mt)}" style="min-width:40px" onkeydown="hIEKey(event,'mt')" tabindex="9"></td>
+    <td><select class="ii-sel" id="ie-status" onkeydown="hIEKey(event,'status')" title="F=FXD S=SUBS H=HOLD X=FLD" tabindex="10">${so}</select></td>
+    <td><div class="ie-btns">
+      <button class="ie-save" onclick="commitInline(false)" title="Save (Enter)">✓</button>
+      <button class="ie-cancel" onclick="cancelInline()" title="Esc">✗</button>
+    </div></td>
+  </tr>`;
+}
+
+// ── Inline editing ──
+function startInlineNew() {
+  if (inlineId != null) cancelInline();
+  inlineId = -1;
+  closeNotes();
+  renderLiveTable();
+  setTimeout(() => document.getElementById('ie-vessel')?.focus(), 60);
+}
+function startInlineEdit(id) {
+  if (inlineId === id) return;
+  if (inlineId != null) cancelInline();
+  inlineId = id;
+  closeNotes();
+  renderLiveTable();
+  setTimeout(() => document.getElementById('ie-vessel')?.focus(), 60);
+}
+function cancelInline() {
+  inlineId = null;
+  document.getElementById('dup-warning').classList.remove('show');
+  document.getElementById('ww-warning').classList.remove('show');
+  renderLiveTable();
+}
+
+function commitInline(saveAndNext = false) {
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const vessel = g('ie-vessel').toUpperCase();
+  if (!vessel) { cancelInline(); return; }
+  const fix = {
+    week:      TNC.LIVE_WEEK,
+    window:    g('ie-window').toUpperCase() || sMem.window,
+    vessel,
+    charterer: g('ie-charterer').toUpperCase() || 'CNR',
+    mt:        g('ie-mt') || '38',
+    cargo:     g('ie-cargo') || 'CPP',
+    laycan:    g('ie-laycan').toUpperCase() || 'N/A',
+    load:      g('ie-load').toUpperCase() || sMem.load,
+    discharge: g('ie-discharge').toUpperCase() || 'OPS',
+    rate:      g('ie-rate') || 'RNR',
+    status:    g('ie-status') || 'FXD',
+    notes:     inlineId !== -1 ? (TNC.getLive().find(f => f.id === inlineId)?.notes || '') : ''
+  };
+  sMem.load   = fix.load;
+  sMem.window = fix.window;
+  let savedId;
+  if (inlineId === -1) {
+    const added = TNC.addLive(fix);
+    savedId = added.id;
+    TNC.toast('Added: ' + vessel, 'success');
+  } else {
+    TNC.updateLive(inlineId, fix);
+    savedId = inlineId;
+    TNC.toast('Updated: ' + vessel, 'success');
+  }
+  const wasNew = inlineId === -1;
+  inlineId = null;
+  document.getElementById('dup-warning').classList.remove('show');
+  document.getElementById('ww-warning').classList.remove('show');
+  renderLiveTable();
+  if (!wasNew) setTimeout(() => { const row = document.getElementById('row-' + savedId); if (row) row.classList.add('row-upd'); }, 50);
+  if (saveAndNext) setTimeout(() => startInlineNew(), 80);
+}
+
+// ── v7: Inline duplicate + laycan checks ──
+function checkInlineDup() {
+  const vessel = (document.getElementById('ie-vessel')?.value || '').toUpperCase().trim();
+  const window = (document.getElementById('ie-window')?.value || '').toUpperCase().trim();
+  const excludeId = inlineId === -1 ? null : inlineId;
+  const dups = TNC.checkDuplicate(vessel, window, excludeId);
+  const dw = document.getElementById('dup-warning');
+  if (dups.length && vessel.length > 3) {
+    document.getElementById('dup-warning-text').textContent =
+      `"${vessel}" already has ${dups.length} fixture(s) in Week 23${window?' (window '+window+')':''} — check for duplicate before saving.`;
+    dw.classList.add('show');
+  } else {
+    dw.classList.remove('show');
+  }
+}
+
+function checkInlineLaycan() {
+  const laycan = document.getElementById('ie-laycan')?.value || '';
+  const ww = document.getElementById('ww-warning');
+  if (TNC.isWrongWeekLaycan(laycan)) {
+    document.getElementById('ww-warning-text').textContent =
+      `Laycan "${laycan.toUpperCase()}" looks outside Week 23 (May 31–Jun 8). Confirm this is intentional.`;
+    ww.classList.add('show');
+  } else {
+    ww.classList.remove('show');
+  }
+}
+
+function dismissDupWarning() {
+  document.getElementById('dup-warning').classList.remove('show');
+}
+
+// ── Inline keyboard handler ──
+function hIEKey(e, field) {
+  if (field === 'status') {
+    const hk = { f: 'FXD', s: 'SUBS', h: 'HOLD', x: 'FLD', d: 'FLD' };
+    if (hk[e.key.toLowerCase()] && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      document.getElementById('ie-status').value = hk[e.key.toLowerCase()];
+    }
+  }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    if (field === 'status') commitInline(true);
+    else {
+      const idx = INLINE_FIELDS.indexOf(field);
+      const nf  = INLINE_FIELDS[idx + 1];
+      if (nf) document.getElementById('ie-' + nf)?.focus();
+      else commitInline(true);
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    cancelInline();
+  }
+}
+
+// ── Global keyboard shortcuts ──
+document.addEventListener('keydown', e => {
+  // Esc cancels inline
+  if (e.key === 'Escape' && inlineId != null) { cancelInline(); return; }
+
+  const active  = document.activeElement;
+  const inInput = active && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA');
+
+  // N/+ → new inline row (only when not in an input)
+  if (!inInput && (e.key === 'n' || e.key === '+')) { e.preventDefault(); startInlineNew(); }
+
+  // Ctrl+F → focus search
+  if (e.ctrlKey && e.key === 'f') { e.preventDefault(); document.getElementById('live-q').focus(); }
+
+  // Ctrl+E → export
+  if (e.ctrlKey && e.key === 'e') { e.preventDefault(); exportExcel(); }
+});
+
+// ── Row click → notes panel ──
+function handleRowClick(e, id) {
+  if (inlineId === id) return;
+  toggleNotes(id);
+}
+function closeNotes() {
+  if (openNotesId) {
+    const nr = document.getElementById('notes-row-' + openNotesId);
+    if (nr) nr.style.display = 'none';
+    openNotesId = null;
+  }
+}
+function toggleNotes(id) {
+  const nr = document.getElementById('notes-row-' + id);
+  const dr = document.getElementById('row-' + id);
+  if (!nr) return;
+  const isOpen = nr.style.display !== 'none';
+  if (openNotesId && openNotesId !== id) {
+    const pn = document.getElementById('notes-row-' + openNotesId);
+    if (pn) pn.style.display = 'none';
+  }
+  if (isOpen) {
+    nr.style.display = 'none';
+    if (dr) dr.style.background = '';
+    openNotesId = null;
+  } else {
+    nr.style.display = 'table-row';
+    if (dr) dr.style.background = 'var(--surface-2)';
+    openNotesId = id;
+    setTimeout(() => document.getElementById('np-ta-' + id)?.focus(), 60);
+  }
+}
+function saveNote(id) {
+  const ta = document.getElementById('np-ta-' + id);
+  if (!ta) return;
+  TNC.updateLive(id, { notes: ta.value.trim() });
+  openNotesId = null;
+  renderLiveTable();
+  const nr = document.getElementById('notes-row-' + id);
+  const dr = document.getElementById('row-' + id);
+  if (nr) { nr.style.display = 'table-row'; openNotesId = id; }
+  if (dr) dr.style.background = 'var(--surface-2)';
+  TNC.toast('Note saved', 'success');
+}
+
+// ── Tags (live week) ──
+function switchAnnotTab(tab, fid) {
+  ['notes','tags'].forEach(t => {
+    const btn  = document.querySelector(`[onclick="switchAnnotTab('${t}','${fid}')"]`);
+    const pane = document.getElementById(`annot-${t}-${fid}`);
+    if (btn)  btn.classList.toggle('active', t === tab);
+    if (pane) pane.classList.toggle('active', t === tab);
+  });
+}
+function lwToggleCat(fid, cat) {
+  const d = TNC.getTagData(fid);
+  d.category = d.category === cat ? '' : cat;
+  TNC.saveTagData(fid, d);
+  const cont = document.getElementById('lw-cats-' + fid);
+  if (cont) cont.innerHTML = TNC.PRESET_CATEGORIES.map(c => {
+    const col = TNC.TAG_COLORS[c] || '#f3f4f6;color:#374151';
+    const active = d.category === c;
+    return `<button class="te-preset-btn${active?' active':''}" style="background:${col};${active?'border-color:rgba(255,255,255,.3)':''}" onclick="lwToggleCat('${fid}','${c}')">${c}</button>`;
+  }).join('');
+}
+function lwAddTag(e, fid) {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim();
+  if (!val) return;
+  const d = TNC.getTagData(fid);
+  if (!d.tags) d.tags = [];
+  if (!d.tags.includes(val)) d.tags.push(val);
+  TNC.saveTagData(fid, d);
+  e.target.value = '';
+  lwRefreshChips(fid, d.tags);
+}
+function lwRemoveTag(fid, tag) {
+  const d = TNC.getTagData(fid);
+  d.tags = (d.tags||[]).filter(t => t !== tag);
+  TNC.saveTagData(fid, d);
+  lwRefreshChips(fid, d.tags);
+}
+function lwRefreshChips(fid, tags) {
+  const cont = document.getElementById('lw-chips-' + fid);
+  if (!cont) return;
+  cont.innerHTML = tags.map(t => `<span class="tag-chip" style="background:var(--g100);color:var(--g700);font-size:11px;padding:3px 9px;cursor:pointer" onclick="lwRemoveTag('${fid}','${TNC.esc(t)}')" title="Remove">${TNC.esc(t)} ×</span>`).join('');
+}
+function lwSaveTags(fid) {
+  TNC.toast('Tags saved', 'success');
+  toggleNotes(fid);
+}
+
+// ── Sort ──
+function sortLive(k) {
+  if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = 1; }
+  renderLiveTable();
+}
+
+// ── Quick-add (NLP) ──
+function handleQAKey(e) {
+  if (e.key === 'Enter') runQA();
+  if (e.key === 'Escape') dismissQA();
+}
+function runQA() {
+  const text = document.getElementById('qa-input').value.trim();
+  if (!text) return;
+  parsedFix = TNC.parseFixtureText(text);
+  const pp = document.getElementById('parse-preview');
+  const pf = document.getElementById('pp-fields');
+  const fields = [['Vessel',parsedFix.vessel],['Charterer',parsedFix.charterer],['Cargo',parsedFix.cargo],['MT',parsedFix.mt],['Load',parsedFix.load],['Discharge',parsedFix.discharge],['Rate',parsedFix.rate],['Status',parsedFix.status],['Window',parsedFix.window]];
+  pf.innerHTML = fields.map(([l,v]) => `<div class="pp-field${!v||v==='N/A'?' pp-empty':''}"><span>${l}: </span><strong>${TNC.esc(v||'—')}</strong></div>`).join('');
+  pp.classList.add('show');
+}
+function confirmQA() {
+  if (!parsedFix || !parsedFix.vessel) { TNC.toast('Could not detect vessel name', 'error'); return; }
+  const f = parsedFix;
+  sMem.load   = f.load;
+  sMem.window = f.window;
+  const added = TNC.addLive({ week: TNC.LIVE_WEEK, window: f.window || sMem.window, vessel: f.vessel.toUpperCase(), charterer: f.charterer||'CNR', mt: f.mt||'38', cargo: f.cargo||'CPP', laycan: f.laycan||'N/A', load: f.load||sMem.load, discharge: f.discharge||'OPS', rate: f.rate||'RNR', status: f.status||'FXD', notes: '' });
+  TNC.toast('Added: ' + added.vessel, 'success');
+  parsedFix = null;
+  document.getElementById('qa-input').value = '';
+  document.getElementById('parse-preview').classList.remove('show');
+  renderLiveTable();
+  setTimeout(() => { const row = document.getElementById('row-' + added.id); if (row) row.classList.add('row-new'); }, 50);
+}
+function editQA() {
+  if (!parsedFix) return;
+  const f = parsedFix;
+  dismissQA();
+  modalEditId = null;
+  document.getElementById('m-title').textContent = 'Add Fixture';
+  document.getElementById('del-btn').style.display = 'none';
+  document.getElementById('del-box').classList.remove('show');
+  document.getElementById('f-vessel').value     = f.vessel || '';
+  document.getElementById('f-charterer').value  = f.charterer || '';
+  document.getElementById('f-cargo').value      = f.cargo || '';
+  document.getElementById('f-mt').value         = f.mt || '38';
+  document.getElementById('f-laycan').value     = f.laycan || '';
+  document.getElementById('f-load').value       = f.load || sMem.load;
+  document.getElementById('f-discharge').value  = f.discharge || '';
+  document.getElementById('f-rate').value       = f.rate || '';
+  document.getElementById('f-window').value     = f.window || sMem.window;
+  document.getElementById('f-status').value     = f.status || 'FXD';
+  document.getElementById('f-notes').value      = '';
+  document.getElementById('modal-ov').classList.remove('hidden');
+  updateRateBadge();
+}
+function dismissQA() {
+  parsedFix = null;
+  document.getElementById('parse-preview').classList.remove('show');
+}
+
+// ── Modal ──
+function openAddModal() {
+  modalEditId = null;
+  document.getElementById('m-title').textContent = 'Add Fixture';
+  document.getElementById('m-sub').textContent   = 'Week 23 · 2026';
+  document.getElementById('del-btn').style.display = 'none';
+  document.getElementById('del-box').classList.remove('show');
+  document.getElementById('modal-dup-warning').classList.remove('show');
+  ['f-vessel','f-charterer','f-laycan','f-load','f-discharge','f-rate','f-window','f-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-cargo').value  = '';
+  document.getElementById('f-status').value = 'FXD';
+  document.getElementById('f-mt').value     = '38';
+  document.getElementById('f-load').value   = sMem.load;
+  document.getElementById('f-window').value = sMem.window;
+  document.getElementById('rate-fmt-badge').style.display = 'none';
+  document.getElementById('modal-ov').classList.remove('hidden');
+  setTimeout(() => document.getElementById('f-vessel').focus(), 100);
+}
+
+function openEditModal(id) {
+  const r = TNC.getLive().find(f => f.id === id);
+  if (!r) return;
+  modalEditId = id;
+  document.getElementById('m-title').textContent = 'Edit Fixture';
+  document.getElementById('m-sub').textContent   = TNC.esc(r.vessel) + ' · ' + TNC.esc(r.charterer);
+  document.getElementById('del-btn').style.display = 'inline-flex';
+  document.getElementById('del-box').classList.remove('show');
+  document.getElementById('modal-dup-warning').classList.remove('show');
+  document.getElementById('f-vessel').value     = r.vessel === 'N/A' ? '' : r.vessel;
+  document.getElementById('f-charterer').value  = r.charterer === 'N/A' ? '' : r.charterer;
+  document.getElementById('f-cargo').value      = r.cargo === 'N/A' ? '' : r.cargo.split('+')[0].trim();
+  document.getElementById('f-mt').value         = r.mt === 'N/A' ? '' : r.mt;
+  document.getElementById('f-laycan').value     = r.laycan === 'N/A' ? '' : r.laycan;
+  document.getElementById('f-load').value       = r.load === 'N/A' ? '' : r.load;
+  document.getElementById('f-discharge').value  = r.discharge === 'N/A' ? '' : r.discharge;
+  document.getElementById('f-rate').value       = r.rate === 'N/A' ? '' : r.rate;
+  document.getElementById('f-window').value     = r.window;
+  document.getElementById('f-status').value     = ['FXD','SUBS','HOLD','FLD'].includes(r.status) ? r.status : 'FXD';
+  document.getElementById('f-notes').value      = r.notes || '';
+  document.getElementById('modal-ov').classList.remove('hidden');
+  updateRateBadge();
+}
+
+function closeModal() {
+  document.getElementById('modal-ov').classList.add('hidden');
+  modalEditId = null;
+  delTargetId = null;
+  document.getElementById('del-box').classList.remove('show');
+  document.getElementById('modal-dup-warning').classList.remove('show');
+}
+
+function handleOvClick(e) {
+  if (e.target === document.getElementById('modal-ov')) closeModal();
+}
+
+function saveModal() {
+  const vessel = document.getElementById('f-vessel').value.trim().toUpperCase();
+  const cargo  = document.getElementById('f-cargo').value.trim();
+  const load   = document.getElementById('f-load').value.trim().toUpperCase();
+  const disch  = document.getElementById('f-discharge').value.trim().toUpperCase();
+  const status = document.getElementById('f-status').value;
+
+  // Validation
+  if (!vessel)  { document.getElementById('f-vessel').classList.add('err'); TNC.toast('Vessel name is required', 'error'); return; }
+  if (!cargo)   { document.getElementById('f-cargo').classList.add('err'); TNC.toast('Cargo type is required', 'error'); return; }
+  if (!load)    { document.getElementById('f-load').classList.add('err');  TNC.toast('Load port is required', 'error'); return; }
+  if (!disch)   { document.getElementById('f-discharge').classList.add('err'); TNC.toast('Discharge is required', 'error'); return; }
+  if (!status)  { document.getElementById('f-status').classList.add('err'); TNC.toast('Status is required', 'error'); return; }
+  ['f-vessel','f-cargo','f-load','f-discharge','f-status'].forEach(id => document.getElementById(id).classList.remove('err'));
+
+  const fix = {
+    week:      TNC.LIVE_WEEK,
+    window:    document.getElementById('f-window').value.trim().toUpperCase() || sMem.window,
+    vessel,
+    charterer: document.getElementById('f-charterer').value.trim().toUpperCase() || 'CNR',
+    mt:        document.getElementById('f-mt').value.trim() || '38',
+    cargo, laycan: document.getElementById('f-laycan').value.trim().toUpperCase() || 'N/A',
+    load, discharge: disch,
+    rate:   document.getElementById('f-rate').value.trim() || 'RNR',
+    status,
+    notes:  document.getElementById('f-notes').value.trim(),
+  };
+
+  if (modalEditId) {
+    TNC.updateLive(modalEditId, fix);
+    TNC.toast('Updated: ' + vessel, 'success');
+  } else {
+    const added = TNC.addLive(fix);
+    TNC.toast('Added: ' + vessel, 'success');
+    sMem.load = fix.load; sMem.window = fix.window;
+  }
+  closeModal();
+  renderLiveTable();
+}
+
+// ── Delete (with undo toast) ──
+function showDel() {
+  delTargetId = modalEditId;
+  document.getElementById('del-box').classList.add('show');
+}
+function cancelDelete() {
+  delTargetId = null;
+  document.getElementById('del-box').classList.remove('show');
+}
+function confirmDelete() {
+  if (!delTargetId) return;
+  const fix = TNC.getLive().find(f => f.id === delTargetId);
+  const name = fix ? fix.vessel : 'fixture';
+  TNC.deleteLive(delTargetId);
+  closeModal();
+  renderLiveTable();
+  // Undo toast
+  const stack = document.getElementById('toast-stack');
+  const el = document.createElement('div');
+  el.className = 'toast warning';
+  el.innerHTML = `Deleted: ${TNC.esc(name)} <button class="toast-undo" onclick="undoDelete(this,'${delTargetId}')">Undo</button>`;
+  stack.appendChild(el);
+  el._timer = setTimeout(() => el.remove(), 5000);
+  delTargetId = null;
+}
+function undoDelete(btn, id) {
+  const undone = TNC.popUndo();
+  if (undone && undone.action === 'delete') {
+    TNC.addLive(undone.data);
+    TNC.toast('Restored: ' + undone.data.vessel, 'success');
+    renderLiveTable();
+  } else {
+    TNC.toast('Nothing to undo', 'warning');
+  }
+  btn.closest('.toast')?.remove();
+}
+
+// ── Modal duplicate check ──
+function checkModalDup() {
+  const vessel = (document.getElementById('f-vessel').value || '').toUpperCase().trim();
+  const window = (document.getElementById('f-window').value || '').toUpperCase().trim();
+  const dups = TNC.checkDuplicate(vessel, window, modalEditId);
+  const dw = document.getElementById('modal-dup-warning');
+  if (dups.length && vessel.length > 3) {
+    dw.style.display = 'flex';
+    dw.textContent = `⚠️ "${vessel}" already has ${dups.length} fixture(s) in Week 23. Verify this is not a duplicate.`;
+  } else {
+    dw.style.display = 'none';
+  }
+}
+
+// ── Rate format badge in modal ──
+function updateRateBadge() {
+  const rate  = document.getElementById('f-rate').value;
+  const badge = document.getElementById('rate-fmt-badge');
+  const fmt   = TNC.detectRateFormat(rate);
+  if (fmt === 'RNR' || !rate) {
+    badge.style.display = 'none';
+  } else {
+    badge.style.display = 'inline';
+    badge.textContent = fmt;
+    const colors = { WS:'rgba(59,130,246,.12);color:var(--blue)', USD:'rgba(34,197,94,.12);color:var(--green)', LS:'rgba(245,158,11,.12);color:var(--amber)', COA:'rgba(139,92,246,.12);color:#a78bfa', PROG:'rgba(100,116,139,.12);color:var(--g500)' };
+    badge.style.cssText = `background:${colors[fmt]||colors.USD};font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:4px;display:inline`;
+  }
+}
+
+// ── Laycan warning in modal ──
+function checkLaycanWarning() {
+  const laycan = document.getElementById('f-laycan').value;
+  // Reuse inline warning div (not shown in modal, so no-op if element missing)
+}
+
+// ── Export ──
+function exportExcel() {
+  const data = getLiveFiltered();
+  if (!data.length) { TNC.toast('No fixtures to export', 'warning'); return; }
+  const ws = XLSX.utils.json_to_sheet(data.map(r => ({
+    Window: r.window, Vessel: r.vessel, Charterer: r.charterer, MT: r.mt,
+    Cargo: r.cargo, Laycan: r.laycan, Load: r.load, Discharge: r.discharge,
+    Rate: r.rate, Status: r.status, TNC: r.tnc ? 'Yes' : '', Notes: r.notes
+  })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Week 23');
+  XLSX.writeFile(wb, 'TNC_Week23_2026.xlsx');
+  TNC.toast('Exported ' + data.length + ' fixtures');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC Fixture Tracker — Dashboard</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="assets/styles.css"/>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
+    <div>
+      <div class="tb-title">Dashboard</div>
+      <div class="tb-sub">2025-2026 · All weeks · Sample data</div>
+    </div>
+  </div>
+  <div class="tb-r">
+    <a href="modules/live-week/index.html" class="btn btn-primary btn-sm">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      Live Week
+    </a>
+  </div>
+</header>
+
+<div class="content">
+
+  <!-- Welcome banner (first visit only) -->
+  <div class="welcome-banner" id="welcome-banner" style="display:none">
+    <div style="font-size:32px;flex-shrink:0">📋</div>
+    <div class="wb-content" style="flex:1">
+      <h2>Welcome to the TNC Fixture Tracker</h2>
+      <p>Track, search, and analyze vessel fixtures across all market update weeks. No technical background needed.</p>
+      <div class="wb-steps">
+        <div class="wb-step"><div class="wb-step-num">1</div><span>Click a week tile to view its fixtures</span></div>
+        <div class="wb-step"><div class="wb-step-num">2</div><span>Use <strong>Live Week</strong> to add or update today's fixtures</span></div>
+        <div class="wb-step"><div class="wb-step-num">3</div><span>Use <strong>Search</strong> to find any vessel or charterer</span></div>
+        <div class="wb-step"><div class="wb-step-num">4</div><span>Use <strong>Import Week</strong> to upload a missing market update</span></div>
+      </div>
+    </div>
+    <button class="ib-dismiss" onclick="dismissWelcome()" style="font-size:20px;flex-shrink:0">×</button>
+  </div>
+
+  <!-- KPI row -->
+  <div class="g4" style="margin-bottom:16px" id="kpi-row"></div>
+
+  <!-- Market Signal Bar -->
+  <div class="signal-bar" id="signal-bar" style="margin-bottom:20px"></div>
+
+  <!-- Week index -->
+  <div class="section-hdr" style="margin-bottom:8px">
+    <h3>Week Index — 2025 &amp; 2026</h3>
+    <span style="font-size:12px;color:var(--g400)">Click any week to view its fixtures</span>
+  </div>
+  <div class="help-text" style="margin-bottom:14px">
+    2025 covers all 52 weeks. 2026 covers weeks 1–23. <strong style="color:var(--green)">Green border</strong> = live &amp; editable. Grey tile = no data yet (use Import Week to add).
+  </div>
+  <div class="week-grid" id="week-grid" style="margin-bottom:24px"></div>
+
+  <!-- Quick actions -->
+  <div class="section-hdr" style="margin-bottom:14px"><h3>Quick Actions</h3></div>
+  <div class="action-cards">
+    <a href="modules/live-week/index.html" class="action-card">
+      <div class="ac-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+      <div class="ac-title">Live Week</div>
+      <div class="ac-desc">Add, edit, and track current-week fixtures</div>
+    </a>
+    <a href="modules/search/index.html" class="action-card">
+      <div class="ac-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+      <div class="ac-title">Search All Fixtures</div>
+      <div class="ac-desc">Find any vessel, charterer, or route across all weeks</div>
+    </a>
+    <a href="modules/history/index.html" class="action-card">
+      <div class="ac-icon" style="background:rgba(139,92,246,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#a78bfa"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></div>
+      <div class="ac-title">History Archive</div>
+      <div class="ac-desc">Browse all past weeks with search &amp; filter</div>
+    </a>
+    <a href="modules/compare/index.html" class="action-card">
+      <div class="ac-icon" style="background:rgba(59,130,246,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--blue)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+      <div class="ac-title">Charts &amp; Trends</div>
+      <div class="ac-desc">Visual comparisons across weeks</div>
+    </a>
+    <a href="modules/upload/index.html" class="action-card">
+      <div class="ac-icon amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+      <div class="ac-title">Import Week</div>
+      <div class="ac-desc">Upload a missing Excel market update</div>
+    </a>
+    <button class="action-card" onclick="TNC.openSupportModal()" style="text-align:center;border:1px dashed var(--border-l);cursor:pointer">
+      <div class="ac-icon" style="background:var(--surface-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--g500)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="ac-title" style="color:var(--g700)">Feedback &amp; Support</div>
+      <div class="ac-desc">Report issues · Request features · Ask questions</div>
+    </button>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 0;</script>
+<script src="assets/hist_data_2025.js"></script>
+<script src="assets/hist_data_2026.js"></script>
+<script src="assets/app.js"></script>
+<script>
+// Week date labels for display
+const WK_DATES = {
+  'WEEK 16 2026':'Apr 14–20','WEEK 17 2026':'Apr 21–27','WEEK 18 2026':'Apr 28–May 4',
+  'WEEK 19 2026':'May 5–11','WEEK 20 2026':'May 12–18','WEEK 21 2026':'May 19–25',
+  'WEEK 22 2026':'May 26–Jun 1','WEEK 23 2026':'Jun 2–8',
+};
+
+function dismissWelcome() {
+  document.getElementById('welcome-banner').style.display = 'none';
+  localStorage.setItem('tnc_v7_welcomed', '1');
+}
+
+function init() {
+  TNC.renderSidebar('hub');
+
+  if (!localStorage.getItem('tnc_v7_welcomed')) {
+    document.getElementById('welcome-banner').style.display = 'flex';
+  }
+
+  const live  = TNC.getLive();
+  const stats = TNC.buildWeekStats();
+
+  // All KPIs scoped to live week — each week is a rollover snapshot,
+  // so live.length is already the cumulative total for this week.
+  const liveFxd  = live.filter(f => f.status === 'FXD').length;
+  const liveFld  = live.filter(f => ['FLD','FAILED'].includes(f.status)).length;
+  const livePend = live.filter(f => f.status === 'SUBS' || f.status === 'HOLD').length;
+  const liveRate = live.length ? Math.round(liveFxd / live.length * 100) : 0;
+
+  // ── KPIs ──
+  document.getElementById('kpi-row').innerHTML = [
+    { cls:'blue',  lbl:'Total Fixtures',      val:live.length.toLocaleString(), sub:'Week 23 · Jun 2–8 · current snapshot' },
+    { cls:'green', lbl:'Fixed (FXD)',          val:liveFxd.toLocaleString(),     sub:`${liveRate}% fix rate this week` },
+    { cls:'amber', lbl:'Pending (SUBS / HOLD)',val:livePend.toLocaleString(),    sub:'Awaiting confirmation' },
+    { cls:'red',   lbl:'Failed',               val:liveFld.toLocaleString(),     sub:'Fell through this week' },
+  ].map(({ cls, lbl, val, sub }) => `
+    <div class="stat-card ${cls}">
+      <div class="stat-lbl">${lbl}</div>
+      <div class="stat-val">${val}</div>
+      <div class="stat-sub">${sub}</div>
+    </div>`).join('');
+
+  // ── Market Signal Bar ──
+  const livePct  = liveRate;
+  const liveSubs = live.filter(f => f.status === 'SUBS').length;
+  const sig      = livePct >= 80 ? 'Covered' : livePct >= 60 ? 'Active' : 'Firm';
+  const sigDot   = livePct >= 80 ? 'green' : livePct >= 60 ? 'blue' : 'amber';
+  const sigDesc  = livePct >= 80 ? 'Market well-covered this week' : livePct >= 60 ? 'Market moving — watch SUBS closely' : 'High volume still uncovered';
+
+  // Last 3 weeks trend
+  const recent = stats.filter(s => s.hasData && !s.isLive).slice(-3);
+  const avgPct = recent.length ? Math.round(recent.reduce((a, b) => a + b.fixedPct, 0) / recent.length) : 0;
+  const trendDir = livePct > avgPct ? '↑' : livePct < avgPct ? '↓' : '→';
+  const trendClr = livePct > avgPct ? 'var(--green)' : livePct < avgPct ? 'var(--red)' : 'var(--g400)';
+
+  // Top cargo this week
+  const cargoCounts = {};
+  live.forEach(f => { const c = (f.cargo||'?').split('+')[0].trim(); cargoCounts[c] = (cargoCounts[c]||0) + 1; });
+  const topCargo = Object.entries(cargoCounts).sort((a,b) => b[1]-a[1])[0];
+
+  document.getElementById('signal-bar').innerHTML = `
+    <div class="signal-cell">
+      <div class="signal-dot ${sigDot}"></div>
+      <div>
+        <div class="signal-lbl">Market Signal · Week 23</div>
+        <div class="signal-val">${sig}</div>
+        <div class="signal-sub">${sigDesc}</div>
+      </div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-dot ${livePct > avgPct ? 'green' : livePct < avgPct ? 'red' : 'blue'}"></div>
+      <div>
+        <div class="signal-lbl">Fix Rate vs 3-Wk Avg</div>
+        <div class="signal-val" style="color:${trendClr}">${livePct}% <span style="font-size:14px">${trendDir}</span></div>
+        <div class="signal-sub">3-week avg: ${avgPct}%</div>
+      </div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-dot blue"></div>
+      <div>
+        <div class="signal-lbl">Pending (SUBS / HOLD)</div>
+        <div class="signal-val">${liveSubs + (live.filter(f=>f.status==='HOLD').length)}</div>
+        <div class="signal-sub">${topCargo ? `Top cargo: ${topCargo[0]} (${topCargo[1]})` : 'No cargo data'}</div>
+      </div>
+    </div>`;
+
+  // ── Week grid ──
+  document.getElementById('week-grid').innerHTML = stats.map(s => {
+    const cls   = s.isLive ? 'live' : 'historical';
+    const href  = s.isLive ? 'modules/live-week/index.html' : 'modules/history/index.html';
+    const bar   = s.total ? Math.round(s.fxd / s.total * 100) : 0;
+    const faded = (!s.hasData && !s.isLive) ? 'opacity:.35;' : '';
+    const liveTag = s.isLive ? '&nbsp;<span class="badge b-live" style="font-size:9px;vertical-align:middle">LIVE</span>' : '';
+    return `<a href="${href}" class="week-tile ${cls}" style="${faded}">
+      <div class="wt-label">${s.week}${liveTag}</div>
+      <div class="wt-dates">${WK_DATES[s.week] || ''}</div>
+      ${(s.hasData || s.isLive) ? `
+        <div class="wt-stats">
+          <div class="wt-stat"><strong>${s.total}</strong>fixtures</div>
+          <div class="wt-stat"><strong>${s.fxd}</strong>fixed</div>
+          <div class="wt-stat"><strong>${s.fixedPct}%</strong>rate</div>
+        </div>
+        <div class="wt-bar"><div class="wt-fill green" style="width:${bar}%"></div></div>
+      ` : `<div style="font-size:11px;color:var(--g400);margin-top:8px;font-style:italic">No data — use Import Week</div>`}
+    </a>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>

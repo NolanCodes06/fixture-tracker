@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TNC — Import Week</title>
+<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="../../assets/styles.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<div class="app">
+<aside id="sidebar"></aside>
+<div class="main">
+<header class="topbar">
+  <div class="tb-l">
+    <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+    <div><div class="tb-title">Import Week</div><div class="tb-sub">Upload a missing Excel week · Map columns · Preview · Confirm</div></div>
+  </div>
+</header>
+<div class="content">
+  <div class="pg-hdr"><h2>Import a Missing Week</h2><p>If a week's data is not yet in the system, you can add it by uploading the Excel market update file here. The system walks you through three simple steps — no technical knowledge needed.</p></div>
+
+  <!-- Step tracker -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-body">
+      <div class="import-step">
+        <div class="is-num" id="step1-num">1</div>
+        <div class="is-content"><h4>Drop or select your Excel file</h4><p>The weekly workbook — any format. SheetJS will parse it in-browser instantly. Your data never leaves your computer.</p></div>
+      </div>
+      <div class="import-step">
+        <div class="is-num" id="step2-num">2</div>
+        <div class="is-content"><h4>Map columns to fixture fields</h4><p>Tell the system which Excel column corresponds to Vessel, Cargo, Load Port, etc. The system tries to auto-detect based on header names.</p></div>
+      </div>
+      <div class="import-step">
+        <div class="is-num" id="step3-num">3</div>
+        <div class="is-content"><h4>Review &amp; confirm</h4><p>Preview the parsed fixtures before importing. Correct any mismatches, then confirm to add the week to the historical archive.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Upload -->
+  <div id="step1">
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <h3>Drop Excel file here</h3>
+      <p>or click to browse · Supports .xlsx, .xls, .csv</p>
+    </div>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(event)"/>
+  </div>
+
+  <!-- Step 2: Map columns -->
+  <div id="step2" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hdr">
+        <div><h3 id="s2-title">Column Mapping</h3><p>Confirm which Excel column maps to each fixture field</p></div>
+        <button class="btn btn-sm btn-ghost" onclick="resetUpload()">← Start over</button>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:12px">
+          <label style="font-size:11px;font-weight:600;color:var(--g600)">Week name for this import</label>
+          <input class="fc" id="imp-week" placeholder="e.g. WEEK 22" style="max-width:220px;margin-top:4px"/>
+        </div>
+        <div id="col-mappings" style="border:1px solid var(--g200);border-radius:var(--r);overflow:hidden"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="buildPreview()">Preview Import →</button>
+          <button class="btn btn-sm btn-ghost" onclick="resetUpload()">Start over</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Preview -->
+  <div id="step3" style="display:none">
+    <div class="card" style="margin-bottom:14px">
+      <div class="card-hdr">
+        <div><h3 id="s3-title">Preview</h3><p>Review parsed fixtures — first 20 shown</p></div>
+        <button class="btn btn-sm btn-ghost" onclick="showStep(2)">← Back to mapping</button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Vessel</th><th>Charterer</th><th>Cargo</th><th>MT</th><th>Load</th><th>Discharge</th><th>Rate</th><th>Status</th></tr></thead>
+        <tbody id="preview-tbody"></tbody>
+      </table></div>
+      <div style="padding:14px 16px;border-top:1px solid var(--g100);display:flex;gap:8px;align-items:center">
+        <button class="btn btn-success btn-sm" onclick="confirmImport()">✓ Import this week</button>
+        <button class="btn btn-sm btn-ghost" onclick="showStep(2)">← Adjust mapping</button>
+        <button class="btn btn-sm btn-ghost" onclick="resetUpload()">Start over</button>
+        <span id="imp-count-note" style="font-size:12px;color:var(--g400)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Already imported weeks -->
+  <div id="imported-section" style="margin-top:24px"></div>
+</div>
+</div>
+</div>
+<div id="toast-stack" class="toast-stack"></div>
+
+<script>window.TNC_DEPTH = 2;</script>
+<script src="../../assets/hist_data_2025.js"></script>
+<script src="../../assets/hist_data_2026.js"></script>
+<script src="../../assets/app.js"></script>
+<script>
+TNC.renderSidebar('upload');
+
+const SCHEMA_FIELDS=['window','vessel','charterer','mt','cargo','laycan','load','discharge','rate','status'];
+const FIELD_LABELS={window:'Window',vessel:'Vessel',charterer:'Charterer',mt:'MT',cargo:'Cargo',laycan:'Laycan',load:'Load Port',discharge:'Discharge',rate:'Rate',status:'Status'};
+const AUTO_MAP={
+  window:['window','wk','week'],vessel:['vessel','ship','name'],charterer:['chart','chrt','cht'],
+  mt:['mt','tons','dwt','size'],cargo:['cargo','cgo','product'],laycan:['laycan','lay'],
+  load:['load','loadport','loading','origin'],discharge:['discharge','disch','dest','destination'],
+  rate:['rate','freight','ws'],status:['status','sts','fix']
+};
+
+let parsedRows=[], xlsxHeaders=[], currentData=[];
+
+function showStep(n){
+  [1,2,3].forEach(i=>document.getElementById('step'+i).style.display=i===n?'block':'none');
+  ['step1-num','step2-num','step3-num'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.textContent=i+1; el.className='is-num'+(i+1<n?' done':'');
+  });
+}
+
+function handleDragOver(e){e.preventDefault();document.getElementById('drop-zone').classList.add('dragover');}
+function handleDragLeave(){document.getElementById('drop-zone').classList.remove('dragover');}
+function handleDrop(e){e.preventDefault();document.getElementById('drop-zone').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)parseFile(f);}
+function handleFileSelect(e){const f=e.target.files[0];if(f)parseFile(f);}
+
+function parseFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const data=new Uint8Array(e.target.result);
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    if(!json.length){TNC.toast('File appears empty','error');return;}
+    // Find header row (row with most non-empty cells)
+    let headerRow=0;
+    for(let i=0;i<Math.min(json.length,10);i++){if(json[i].filter(c=>c!=='').length>json[headerRow].filter(c=>c!=='').length)headerRow=i;}
+    xlsxHeaders=json[headerRow].map(h=>String(h).toLowerCase().trim());
+    currentData=json.slice(headerRow+1).filter(row=>row.some(c=>c!==''));
+    document.getElementById('s2-title').textContent=`Map Columns — ${currentData.length} rows detected`;
+    buildMappingUI();
+    showStep(2);
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function buildMappingUI(){
+  const cm=document.getElementById('col-mappings');
+  const colOptions=xlsxHeaders.map((h,i)=>`<option value="${i}">${h||'(col '+i+')'}</option>`).join('');
+  const notMapped='<option value="-1">— not mapped —</option>';
+  cm.innerHTML=SCHEMA_FIELDS.map(field=>{
+    const bestIdx=xlsxHeaders.findIndex(h=>AUTO_MAP[field]&&AUTO_MAP[field].some(k=>h.includes(k)));
+    return `<div class="col-map" style="padding:8px 12px">
+      <div style="font-size:12px;font-weight:600;color:var(--g700)">${FIELD_LABELS[field]}</div>
+      <div class="arrow">→</div>
+      <select class="fsel" id="map-${field}" style="width:100%">
+        ${notMapped}${xlsxHeaders.map((h,i)=>`<option value="${i}"${i===bestIdx?' selected':''}>${h||'(col '+i+')'}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function buildPreview(){
+  const weekName=document.getElementById('imp-week').value.trim().toUpperCase();
+  if(!weekName){TNC.toast('Enter a week name first (e.g. WEEK 22)','error');return;}
+  const mapping={};
+  SCHEMA_FIELDS.forEach(f=>{const sel=document.getElementById('map-'+f);if(sel)mapping[f]=parseInt(sel.value);});
+  const vessel_idx=mapping.vessel;
+  if(vessel_idx<0){TNC.toast('Map at least the Vessel column','error');return;}
+  parsedRows=currentData.map(row=>{
+    const get=(f)=>{ const i=mapping[f]; return i>=0?String(row[i]||'').trim().toUpperCase():''; };
+    return {window:get('window')||'—',vessel:get('vessel'),charterer:get('charterer')||'CNR',mt:get('mt')||'38',cargo:get('cargo')||'CPP',laycan:get('laycan')||'N/A',load:get('load')||'USG',discharge:get('discharge')||'OPS',rate:get('rate')||'RNR',status:(['FXD','SUBS','HOLD','FLD','FAILED'].includes(get('status'))?get('status'):'FXD'),notes:''};
+  }).filter(r=>r.vessel);
+  document.getElementById('s3-title').textContent=`Preview — ${weekName} (${parsedRows.length} fixtures)`;
+  document.getElementById('imp-count-note').textContent=parsedRows.length+' fixtures ready to import';
+  document.getElementById('preview-tbody').innerHTML=parsedRows.slice(0,20).map(r=>`<tr>
+    <td class="td-v">${TNC.esc(r.vessel)}</td>
+    <td class="td-m">${TNC.esc(r.charterer)}</td>
+    <td>${TNC.cargoBadge(r.cargo)}</td>
+    <td class="td-m">${r.mt}</td>
+    <td class="td-m">${TNC.esc(r.load)}</td>
+    <td class="td-m">${TNC.esc(r.discharge)}</td>
+    <td style="font-size:12px">${TNC.esc(r.rate)}</td>
+    <td>${TNC.statusBadge(r.status)}</td>
+  </tr>`).join('');
+  showStep(3);
+}
+
+function confirmImport(){
+  const weekName=document.getElementById('imp-week').value.trim().toUpperCase();
+  if(!parsedRows.length){TNC.toast('Nothing to import','error');return;}
+  const count=TNC.importWeek(weekName,parsedRows);
+  TNC.toast(`Imported ${count} fixtures for ${weekName}`,'success');
+  resetUpload();
+  renderImportedSection();
+}
+
+function resetUpload(){
+  parsedRows=[];xlsxHeaders=[];currentData=[];
+  document.getElementById('file-input').value='';
+  showStep(1);
+}
+
+function renderImportedSection(){
+  const imp=TNC.getImported();
+  const section=document.getElementById('imported-section');
+  if(!imp.length){section.innerHTML='';return;}
+  const weeks=[...new Set(imp.map(f=>f.week))];
+  section.innerHTML=`<div class="section-hdr"><h3>Imported Weeks</h3><span style="font-size:12px;color:var(--g400)">${weeks.length} week${weeks.length!==1?'s':''} imported</span></div>`
+    +weeks.map(wk=>{
+      const rows=imp.filter(f=>f.week===wk);
+      const fxd=rows.filter(f=>f.status==='FXD').length;
+      return `<div class="card" style="margin-bottom:10px">
+        <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div><span class="badge b-imported">${TNC.esc(wk)}</span> <span style="font-size:12px;color:var(--g500);margin-left:8px">${rows.length} fixtures · ${fxd} fixed (${Math.round(fxd/rows.length*100)}%)</span></div>
+          <button class="btn btn-danger btn-xs" onclick="removeImport('${wk}')">Remove</button>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function removeImport(wk){
+  if(!confirm('Remove all imported data for '+wk+'?')) return;
+  TNC.importWeek(wk,[]);
+  TNC.toast('Removed: '+wk,'warning');
+  renderImportedSection();
+}
+
+showStep(1);
+renderImportedSection();
+</script>
+</body>
+</html>
