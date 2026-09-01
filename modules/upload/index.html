@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TNC — Import Week</title>
-<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<title>Fixture Tracker - Import Week</title>
+<script>(function(){var t=localStorage.getItem('ftk_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="../../assets/styles.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -19,14 +19,14 @@
   </div>
 </header>
 <div class="content">
-  <div class="pg-hdr"><h2>Import a Missing Week</h2><p>If a week's data is not yet in the system, you can add it by uploading the Excel market update file here. The system walks you through three simple steps — no technical knowledge needed.</p></div>
+  <div class="pg-hdr"><h2>Import a Missing Week</h2><p>If a week's data is not yet in the system, you can add it by uploading the Excel market update file here. The system walks you through three simple steps - no technical knowledge needed.</p></div>
 
   <!-- Step tracker -->
   <div class="card" style="margin-bottom:18px">
     <div class="card-body">
       <div class="import-step">
         <div class="is-num" id="step1-num">1</div>
-        <div class="is-content"><h4>Drop or select your Excel file</h4><p>The weekly workbook — any format. SheetJS will parse it in-browser instantly. Your data never leaves your computer.</p></div>
+        <div class="is-content"><h4>Drop or select your Excel file</h4><p>The weekly workbook - any format. SheetJS will parse it in-browser instantly. Your data never leaves your computer.</p></div>
       </div>
       <div class="import-step">
         <div class="is-num" id="step2-num">2</div>
@@ -74,7 +74,7 @@
   <div id="step3" style="display:none">
     <div class="card" style="margin-bottom:14px">
       <div class="card-hdr">
-        <div><h3 id="s3-title">Preview</h3><p>Review parsed fixtures — first 20 shown</p></div>
+        <div><h3 id="s3-title">Preview</h3><p>Review parsed fixtures - first 20 shown</p></div>
         <button class="btn btn-sm btn-ghost" onclick="showStep(2)">← Back to mapping</button>
       </div>
       <div class="tbl-wrap"><table>
@@ -97,12 +97,12 @@
 </div>
 <div id="toast-stack" class="toast-stack"></div>
 
-<script>window.TNC_DEPTH = 2;</script>
+<script>window.FTK_DEPTH = 2;</script>
 <script src="../../assets/hist_data_2025.js"></script>
 <script src="../../assets/hist_data_2026.js"></script>
 <script src="../../assets/app.js"></script>
 <script>
-TNC.renderSidebar('upload');
+FTK.renderSidebar('upload');
 
 const SCHEMA_FIELDS=['window','vessel','charterer','mt','cargo','laycan','load','discharge','rate','status'];
 const FIELD_LABELS={window:'Window',vessel:'Vessel',charterer:'Charterer',mt:'MT',cargo:'Cargo',laycan:'Laycan',load:'Load Port',discharge:'Discharge',rate:'Rate',status:'Status'};
@@ -135,13 +135,13 @@ function parseFile(file){
     const wb=XLSX.read(data,{type:'array'});
     const ws=wb.Sheets[wb.SheetNames[0]];
     const json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-    if(!json.length){TNC.toast('File appears empty','error');return;}
+    if(!json.length){FTK.toast('File appears empty','error');return;}
     // Find header row (row with most non-empty cells)
     let headerRow=0;
     for(let i=0;i<Math.min(json.length,10);i++){if(json[i].filter(c=>c!=='').length>json[headerRow].filter(c=>c!=='').length)headerRow=i;}
     xlsxHeaders=json[headerRow].map(h=>String(h).toLowerCase().trim());
     currentData=json.slice(headerRow+1).filter(row=>row.some(c=>c!==''));
-    document.getElementById('s2-title').textContent=`Map Columns — ${currentData.length} rows detected`;
+    document.getElementById('s2-title').textContent=`Map Columns - ${currentData.length} rows detected`;
     buildMappingUI();
     showStep(2);
   };
@@ -151,7 +151,7 @@ function parseFile(file){
 function buildMappingUI(){
   const cm=document.getElementById('col-mappings');
   const colOptions=xlsxHeaders.map((h,i)=>`<option value="${i}">${h||'(col '+i+')'}</option>`).join('');
-  const notMapped='<option value="-1">— not mapped —</option>';
+  const notMapped='<option value="-1">- not mapped -</option>';
   cm.innerHTML=SCHEMA_FIELDS.map(field=>{
     const bestIdx=xlsxHeaders.findIndex(h=>AUTO_MAP[field]&&AUTO_MAP[field].some(k=>h.includes(k)));
     return `<div class="col-map" style="padding:8px 12px">
@@ -166,35 +166,35 @@ function buildMappingUI(){
 
 function buildPreview(){
   const weekName=document.getElementById('imp-week').value.trim().toUpperCase();
-  if(!weekName){TNC.toast('Enter a week name first (e.g. WEEK 22)','error');return;}
+  if(!weekName){FTK.toast('Enter a week name first (e.g. WEEK 22)','error');return;}
   const mapping={};
   SCHEMA_FIELDS.forEach(f=>{const sel=document.getElementById('map-'+f);if(sel)mapping[f]=parseInt(sel.value);});
   const vessel_idx=mapping.vessel;
-  if(vessel_idx<0){TNC.toast('Map at least the Vessel column','error');return;}
+  if(vessel_idx<0){FTK.toast('Map at least the Vessel column','error');return;}
   parsedRows=currentData.map(row=>{
     const get=(f)=>{ const i=mapping[f]; return i>=0?String(row[i]||'').trim().toUpperCase():''; };
-    return {window:get('window')||'—',vessel:get('vessel'),charterer:get('charterer')||'CNR',mt:get('mt')||'38',cargo:get('cargo')||'CPP',laycan:get('laycan')||'N/A',load:get('load')||'USG',discharge:get('discharge')||'OPS',rate:get('rate')||'RNR',status:(['FXD','SUBS','HOLD','FLD','FAILED'].includes(get('status'))?get('status'):'FXD'),notes:''};
+    return {window:get('window')||'-',vessel:get('vessel'),charterer:get('charterer')||'CNR',mt:get('mt')||'38',cargo:get('cargo')||'CPP',laycan:get('laycan')||'N/A',load:get('load')||'USG',discharge:get('discharge')||'OPS',rate:get('rate')||'RNR',status:(['FXD','SUBS','HOLD','FLD','FAILED'].includes(get('status'))?get('status'):'FXD'),notes:''};
   }).filter(r=>r.vessel);
-  document.getElementById('s3-title').textContent=`Preview — ${weekName} (${parsedRows.length} fixtures)`;
+  document.getElementById('s3-title').textContent=`Preview - ${weekName} (${parsedRows.length} fixtures)`;
   document.getElementById('imp-count-note').textContent=parsedRows.length+' fixtures ready to import';
   document.getElementById('preview-tbody').innerHTML=parsedRows.slice(0,20).map(r=>`<tr>
-    <td class="td-v">${TNC.esc(r.vessel)}</td>
-    <td class="td-m">${TNC.esc(r.charterer)}</td>
-    <td>${TNC.cargoBadge(r.cargo)}</td>
+    <td class="td-v">${FTK.esc(r.vessel)}</td>
+    <td class="td-m">${FTK.esc(r.charterer)}</td>
+    <td>${FTK.cargoBadge(r.cargo)}</td>
     <td class="td-m">${r.mt}</td>
-    <td class="td-m">${TNC.esc(r.load)}</td>
-    <td class="td-m">${TNC.esc(r.discharge)}</td>
-    <td style="font-size:12px">${TNC.esc(r.rate)}</td>
-    <td>${TNC.statusBadge(r.status)}</td>
+    <td class="td-m">${FTK.esc(r.load)}</td>
+    <td class="td-m">${FTK.esc(r.discharge)}</td>
+    <td style="font-size:12px">${FTK.esc(r.rate)}</td>
+    <td>${FTK.statusBadge(r.status)}</td>
   </tr>`).join('');
   showStep(3);
 }
 
 function confirmImport(){
   const weekName=document.getElementById('imp-week').value.trim().toUpperCase();
-  if(!parsedRows.length){TNC.toast('Nothing to import','error');return;}
-  const count=TNC.importWeek(weekName,parsedRows);
-  TNC.toast(`Imported ${count} fixtures for ${weekName}`,'success');
+  if(!parsedRows.length){FTK.toast('Nothing to import','error');return;}
+  const count=FTK.importWeek(weekName,parsedRows);
+  FTK.toast(`Imported ${count} fixtures for ${weekName}`,'success');
   resetUpload();
   renderImportedSection();
 }
@@ -206,7 +206,7 @@ function resetUpload(){
 }
 
 function renderImportedSection(){
-  const imp=TNC.getImported();
+  const imp=FTK.getImported();
   const section=document.getElementById('imported-section');
   if(!imp.length){section.innerHTML='';return;}
   const weeks=[...new Set(imp.map(f=>f.week))];
@@ -216,7 +216,7 @@ function renderImportedSection(){
       const fxd=rows.filter(f=>f.status==='FXD').length;
       return `<div class="card" style="margin-bottom:10px">
         <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-          <div><span class="badge b-imported">${TNC.esc(wk)}</span> <span style="font-size:12px;color:var(--g500);margin-left:8px">${rows.length} fixtures · ${fxd} fixed (${Math.round(fxd/rows.length*100)}%)</span></div>
+          <div><span class="badge b-imported">${FTK.esc(wk)}</span> <span style="font-size:12px;color:var(--g500);margin-left:8px">${rows.length} fixtures · ${fxd} fixed (${Math.round(fxd/rows.length*100)}%)</span></div>
           <button class="btn btn-danger btn-xs" onclick="removeImport('${wk}')">Remove</button>
         </div>
       </div>`;
@@ -225,8 +225,8 @@ function renderImportedSection(){
 
 function removeImport(wk){
   if(!confirm('Remove all imported data for '+wk+'?')) return;
-  TNC.importWeek(wk,[]);
-  TNC.toast('Removed: '+wk,'warning');
+  FTK.importWeek(wk,[]);
+  FTK.toast('Removed: '+wk,'warning');
   renderImportedSection();
 }
 

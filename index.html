@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TNC Fixture Tracker — Dashboard</title>
-<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<title>Fixture Tracker - Dashboard</title>
+<script>(function(){var t=localStorage.getItem('ftk_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="assets/styles.css"/>
 </head>
@@ -33,7 +33,7 @@
   <div class="welcome-banner" id="welcome-banner" style="display:none">
     <div style="font-size:32px;flex-shrink:0">📋</div>
     <div class="wb-content" style="flex:1">
-      <h2>Welcome to the TNC Fixture Tracker</h2>
+      <h2>Welcome to the Fixture Tracker</h2>
       <p>Track, search, and analyze vessel fixtures across all market update weeks. No technical background needed.</p>
       <div class="wb-steps">
         <div class="wb-step"><div class="wb-step-num">1</div><span>Click a week tile to view its fixtures</span></div>
@@ -53,11 +53,11 @@
 
   <!-- Week index -->
   <div class="section-hdr" style="margin-bottom:8px">
-    <h3>Week Index — 2025 &amp; 2026</h3>
+    <h3>Week Index - 2025 &amp; 2026</h3>
     <span style="font-size:12px;color:var(--g400)">Click any week to view its fixtures</span>
   </div>
   <div class="help-text" style="margin-bottom:14px">
-    2025 covers all 52 weeks. 2026 covers weeks 1–23. <strong style="color:var(--green)">Green border</strong> = live &amp; editable. Grey tile = no data yet (use Import Week to add).
+    2025 covers all 52 weeks. 2026 covers weeks 1-23. <strong style="color:var(--green)">Green border</strong> = live &amp; editable. Grey tile = no data yet (use Import Week to add).
   </div>
   <div class="week-grid" id="week-grid" style="margin-bottom:24px"></div>
 
@@ -89,7 +89,7 @@
       <div class="ac-title">Import Week</div>
       <div class="ac-desc">Upload a missing Excel market update</div>
     </a>
-    <button class="action-card" onclick="TNC.openSupportModal()" style="text-align:center;border:1px dashed var(--border-l);cursor:pointer">
+    <button class="action-card" onclick="FTK.openSupportModal()" style="text-align:center;border:1px dashed var(--border-l);cursor:pointer">
       <div class="ac-icon" style="background:var(--surface-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--g500)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
       <div class="ac-title" style="color:var(--g700)">Feedback &amp; Support</div>
       <div class="ac-desc">Report issues · Request features · Ask questions</div>
@@ -101,34 +101,34 @@
 </div><!-- /app -->
 <div id="toast-stack" class="toast-stack"></div>
 
-<script>window.TNC_DEPTH = 0;</script>
+<script>window.FTK_DEPTH = 0;</script>
 <script src="assets/hist_data_2025.js"></script>
 <script src="assets/hist_data_2026.js"></script>
 <script src="assets/app.js"></script>
 <script>
 // Week date labels for display
 const WK_DATES = {
-  'WEEK 16 2026':'Apr 14–20','WEEK 17 2026':'Apr 21–27','WEEK 18 2026':'Apr 28–May 4',
-  'WEEK 19 2026':'May 5–11','WEEK 20 2026':'May 12–18','WEEK 21 2026':'May 19–25',
-  'WEEK 22 2026':'May 26–Jun 1','WEEK 23 2026':'Jun 2–8',
+  'WEEK 16 2026':'Apr 14-20','WEEK 17 2026':'Apr 21-27','WEEK 18 2026':'Apr 28-May 4',
+  'WEEK 19 2026':'May 5-11','WEEK 20 2026':'May 12-18','WEEK 21 2026':'May 19-25',
+  'WEEK 22 2026':'May 26-Jun 1','WEEK 23 2026':'Jun 2-8',
 };
 
 function dismissWelcome() {
   document.getElementById('welcome-banner').style.display = 'none';
-  localStorage.setItem('tnc_v7_welcomed', '1');
+  localStorage.setItem('ftk_v7_welcomed', '1');
 }
 
 function init() {
-  TNC.renderSidebar('hub');
+  FTK.renderSidebar('hub');
 
-  if (!localStorage.getItem('tnc_v7_welcomed')) {
+  if (!localStorage.getItem('ftk_v7_welcomed')) {
     document.getElementById('welcome-banner').style.display = 'flex';
   }
 
-  const live  = TNC.getLive();
-  const stats = TNC.buildWeekStats();
+  const live  = FTK.getLive();
+  const stats = FTK.buildWeekStats();
 
-  // All KPIs scoped to live week — each week is a rollover snapshot,
+  // All KPIs scoped to live week - each week is a rollover snapshot,
   // so live.length is already the cumulative total for this week.
   const liveFxd  = live.filter(f => f.status === 'FXD').length;
   const liveFld  = live.filter(f => ['FLD','FAILED'].includes(f.status)).length;
@@ -137,7 +137,7 @@ function init() {
 
   // ── KPIs ──
   document.getElementById('kpi-row').innerHTML = [
-    { cls:'blue',  lbl:'Total Fixtures',      val:live.length.toLocaleString(), sub:'Week 23 · Jun 2–8 · current snapshot' },
+    { cls:'blue',  lbl:'Total Fixtures',      val:live.length.toLocaleString(), sub:'Week 23 · Jun 2-8 · current snapshot' },
     { cls:'green', lbl:'Fixed (FXD)',          val:liveFxd.toLocaleString(),     sub:`${liveRate}% fix rate this week` },
     { cls:'amber', lbl:'Pending (SUBS / HOLD)',val:livePend.toLocaleString(),    sub:'Awaiting confirmation' },
     { cls:'red',   lbl:'Failed',               val:liveFld.toLocaleString(),     sub:'Fell through this week' },
@@ -153,7 +153,7 @@ function init() {
   const liveSubs = live.filter(f => f.status === 'SUBS').length;
   const sig      = livePct >= 80 ? 'Covered' : livePct >= 60 ? 'Active' : 'Firm';
   const sigDot   = livePct >= 80 ? 'green' : livePct >= 60 ? 'blue' : 'amber';
-  const sigDesc  = livePct >= 80 ? 'Market well-covered this week' : livePct >= 60 ? 'Market moving — watch SUBS closely' : 'High volume still uncovered';
+  const sigDesc  = livePct >= 80 ? 'Market well-covered this week' : livePct >= 60 ? 'Market moving - watch SUBS closely' : 'High volume still uncovered';
 
   // Last 3 weeks trend
   const recent = stats.filter(s => s.hasData && !s.isLive).slice(-3);
@@ -209,7 +209,7 @@ function init() {
           <div class="wt-stat"><strong>${s.fixedPct}%</strong>rate</div>
         </div>
         <div class="wt-bar"><div class="wt-fill green" style="width:${bar}%"></div></div>
-      ` : `<div style="font-size:11px;color:var(--g400);margin-top:8px;font-style:italic">No data — use Import Week</div>`}
+      ` : `<div style="font-size:11px;color:var(--g400);margin-top:8px;font-style:italic">No data - use Import Week</div>`}
     </a>`;
   }).join('');
 }

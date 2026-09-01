@@ -1,9 +1,9 @@
-/* ══ TNC Fixture Tracker v7 — Bloomberg Modern Design System ══ */
+/* ══ FTK Fixture Tracker v7 - Bloomberg Modern Design System ══ */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
 /* ── Theme Variables ─────────────────────────────────────────── */
 :root {
-  /* Brand — constant across themes */
+  /* Brand - constant across themes */
   --blue:    #3b82f6;
   --blue-h:  #2563eb;
   --blue-l:  #60a5fa;
@@ -16,7 +16,7 @@
   --red-l:   #f87171;
   --purple:  #a78bfa;
 
-  /* Sidebar — ALWAYS dark (never changes with theme) */
+  /* Sidebar - ALWAYS dark (never changes with theme) */
   --sb-bg:      #050b17;
   --sb-hover:   rgba(255,255,255,.04);
   --sb-active:  rgba(59,130,246,.14);
@@ -25,7 +25,7 @@
   --sb-mid:     rgba(255,255,255,.68);
   --sb-bright:  #eaf4ff;
 
-  /* Table/quick-bar headers — always dark (Bloomberg style) */
+  /* Table/quick-bar headers - always dark (Bloomberg style) */
   --th-bg: #040b18;
   --qb-bg: #060d1c;
 
@@ -317,7 +317,7 @@ tr:hover .td-acts,.row-editing .td-acts { opacity:1 }
 .b-wk   { background:rgba(59,130,246,.1);   color:var(--blue-l) }
 .b-live { background:rgba(34,197,94,.13);   color:var(--green-l); font-weight:800 }
 .b-imported { background:rgba(245,158,11,.1); color:var(--amber-l) }
-.b-tnc  { background:rgba(34,197,94,.1);   color:var(--green-l); border:1px solid rgba(34,197,94,.18) }
+.b-ftk  { background:rgba(34,197,94,.1);   color:var(--green-l); border:1px solid rgba(34,197,94,.18) }
 
 /* Light-mode badge text corrections */
 [data-theme="light"] .b-fxd  { color:#166534; background:rgba(34,197,94,.1) }
@@ -330,7 +330,7 @@ tr:hover .td-acts,.row-editing .td-acts { opacity:1 }
 [data-theme="light"] .b-nap  { color:#9d174d }
 [data-theme="light"] .b-jet  { color:#5b21b6 }
 [data-theme="light"] .b-live { color:#166534 }
-[data-theme="light"] .b-tnc  { color:#166534 }
+[data-theme="light"] .b-ftk  { color:#166534 }
 
 /* ── Forms ───────────────────────────────────────────────────── */
 .fg { display:flex; flex-direction:column; gap:4px }

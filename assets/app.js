@@ -4,7 +4,7 @@
 //   hist_data_2025.js → HIST_2025 (52 weeks of sample rows)
 //   hist_data_2026.js → HIST_2026 (weeks 01-22 of sample rows)
 //   LIVE_SEED (below) → seeds the editable live week (WEEK 23 2026)
-//   localStorage key: tnc_v7_live
+//   localStorage key: ftk_v7_live
 //
 const LIVE_SEED = [
   ["WEEK 23 2026","","IRSEN HARMONY","OSTLUND","37","CPP","5-6 JUNE","ROTTERDAM","USAC","110","FLD","",0],
@@ -43,26 +43,26 @@ const LIVE_SEED = [
 
 // ── THEME INIT (prevents flash of wrong theme on load) ───────
 (function() {
-  var t = localStorage.getItem('tnc_v7_theme') || 'dark';
+  var t = localStorage.getItem('ftk_v7_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
 })();
 
 'use strict';
 
 // ── PATH RESOLUTION ─────────────────────────────────────
-// Each page sets window.TNC_DEPTH before loading this file:
+// Each page sets window.FTK_DEPTH before loading this file:
 //   0 = root (index.html)
 //   2 = modules/x/index.html
 const _base = (() => {
-  const d = (typeof TNC_DEPTH !== 'undefined') ? TNC_DEPTH : 0;
+  const d = (typeof FTK_DEPTH !== 'undefined') ? FTK_DEPTH : 0;
   if (d === 0) return '.';
   return Array(d).fill('..').join('/');
 })();
 
-// ── TNC DATA LAYER ───────────────────────────────────────
-const TNC = (() => {
-  const LIVE_KEY     = 'tnc_v7_live';   // bumped from v5 — forces re-seed from corrected Week 23 data
-  const IMP_KEY      = 'tnc_v5_imported';
+// ── FTK DATA LAYER ───────────────────────────────────────
+const FTK = (() => {
+  const LIVE_KEY     = 'ftk_v7_live';   // bumped from v5 - forces re-seed from corrected Week 23 data
+  const IMP_KEY      = 'ftk_v5_imported';
   const LIVE_WEEK    = 'WEEK 23 2026';
 
   // Historical rows: sourced from HIST_2025 / HIST_2026 external files
@@ -75,7 +75,7 @@ const TNC = (() => {
     const seed = LIVE_SEED.map((r, i) => ({
       id:`L${i}`, week:LIVE_WEEK, window:r[1], vessel:r[2], charterer:r[3],
       mt:r[4], cargo:r[5], laycan:r[6], load:r[7],
-      discharge:r[8], rate:r[9], status:r[10], notes:r[11]||'', tnc:r[12]===1, isLive:true
+      discharge:r[8], rate:r[9], status:r[10], notes:r[11]||'', ftk:r[12]===1, isLive:true
     }));
     localStorage.setItem(LIVE_KEY, JSON.stringify(seed));
     return seed;
@@ -90,13 +90,13 @@ const TNC = (() => {
 
   // ── PUBLIC READ ───────────────────────────────────────
   function getHistorical() {
-    const h25 = (typeof HIST_2025 !== 'undefined' ? HIST_2025 : []).map((r,i)=>({id:`H25_${i}`,week:r[0],window:r[1],vessel:r[2],charterer:r[3],mt:r[4],cargo:r[5],laycan:r[6],load:r[7],discharge:r[8],rate:r[9],status:r[10],notes:r[11]||'',tnc:r[12]===1,isLive:false}));
-    const h26 = (typeof HIST_2026 !== 'undefined' ? HIST_2026 : []).map((r,i)=>({id:`H26_${i}`,week:r[0],window:r[1],vessel:r[2],charterer:r[3],mt:r[4],cargo:r[5],laycan:r[6],load:r[7],discharge:r[8],rate:r[9],status:r[10],notes:r[11]||'',tnc:r[12]===1,isLive:false}));
+    const h25 = (typeof HIST_2025 !== 'undefined' ? HIST_2025 : []).map((r,i)=>({id:`H25_${i}`,week:r[0],window:r[1],vessel:r[2],charterer:r[3],mt:r[4],cargo:r[5],laycan:r[6],load:r[7],discharge:r[8],rate:r[9],status:r[10],notes:r[11]||'',ftk:r[12]===1,isLive:false}));
+    const h26 = (typeof HIST_2026 !== 'undefined' ? HIST_2026 : []).map((r,i)=>({id:`H26_${i}`,week:r[0],window:r[1],vessel:r[2],charterer:r[3],mt:r[4],cargo:r[5],laycan:r[6],load:r[7],discharge:r[8],rate:r[9],status:r[10],notes:r[11]||'',ftk:r[12]===1,isLive:false}));
     return [...h25, ...h26];
   }
   function getLive()       { return _live; }
   function getImported()   { return _loadImp(); }
-  function getTNCAll()     { return [...getHistorical().filter(f=>f.tnc), ..._live.filter(f=>f.tnc)]; }
+  function getFTKAll()     { return [...getHistorical().filter(f=>f.ftk), ..._live.filter(f=>f.ftk)]; }
   function getAll()        { return [...getHistorical(), ..._loadImp(), ..._live]; }
 
   function getWeeks() {
@@ -137,7 +137,7 @@ const TNC = (() => {
   function resetLive() { localStorage.removeItem(LIVE_KEY); _live=_loadLive(); }
 
   // ── WEEK STATS (for hub + compare) ───────────────────
-  function buildWeekStats(selectedWeeks, tncOnly=false) {
+  function buildWeekStats(selectedWeeks, ftkOnly=false) {
     const allWeeks = getWeeks();
     const imp=_loadImp();
     return allWeeks.map(wk=>{
@@ -145,7 +145,7 @@ const TNC = (() => {
       let fx = wk===LIVE_WEEK
         ? _live
         : [...getHistorical(),...imp].filter(f=>f.week===wk);
-      if(tncOnly) fx=fx.filter(f=>f.tnc);
+      if(ftkOnly) fx=fx.filter(f=>f.ftk);
       if (!fx.length && wk!==LIVE_WEEK) return {week:wk,label:wk.replace('WEEK ','Wk ').replace(' 2025','').replace(' 2026',''),hasData:false,total:0,fxd:0,fld:0,subs:0,hold:0,fixedPct:0,cpp:0,ulsd:0,ums:0,nap:0,jet:0,ta:0,cbs:0,ecm:0,ops:0,wcmex:0,isLive:false};
       const c=v=>fx.filter(f=>(f.cargo||'').includes(v)).length;
       const d=v=>fx.filter(f=>(f.discharge||'').includes(v)).length;
@@ -170,10 +170,10 @@ const TNC = (() => {
   }
   function statusBadge(s) {
     const m={FXD:'b-fxd',SUBS:'b-subs',HOLD:'b-hold',FLD:'b-fld',FAILED:'b-fld'};
-    return `<span class="badge ${m[s]||'b-unk'}">${esc(s||'—')}</span>`;
+    return `<span class="badge ${m[s]||'b-unk'}">${esc(s||'-')}</span>`;
   }
   function cargoBadge(c) {
-    if (!c||c==='N/A') return '<span class="badge b-unk">—</span>';
+    if (!c||c==='N/A') return '<span class="badge b-unk">-</span>';
     const main=c.split('+')[0].trim();
     const m={CPP:'b-cpp',ULSD:'b-ulsd',UMS:'b-ums',NAP:'b-nap',JET:'b-jet',CHEMS:'b-chems',CSS:'b-css',MTBE:'b-mtbe',HSD:'b-ulsd'};
     return `<span class="badge ${m[main]||'b-other'}">${esc(c)}</span>`;
@@ -231,10 +231,10 @@ const TNC = (() => {
 
   // ── SIDEBAR ───────────────────────────────────────────
   // ── TAGS & CATEGORIES ──────────────────────────────────────────
-  const TAGS_KEY = 'tnc_v6_tags';
-  const PRESET_CATEGORIES = ['Follow Up','TNC Priority','Rate Query','Watch','Cleared','New Vessel','Dispute','COA','On Hold Review'];
+  const TAGS_KEY = 'ftk_v6_tags';
+  const PRESET_CATEGORIES = ['Follow Up','Desk Priority','Rate Query','Watch','Cleared','New Vessel','Dispute','COA','On Hold Review'];
   const TAG_COLORS = {
-    'Follow Up':'#dbeafe;color:#1e40af','TNC Priority':'#dcfce7;color:#15803d',
+    'Follow Up':'#dbeafe;color:#1e40af','Desk Priority':'#dcfce7;color:#15803d',
     'Rate Query':'#fef3c7;color:#92400e','Watch':'#fce7f3;color:#9d174d',
     'Cleared':'#f3f4f6;color:#374151','New Vessel':'#ede9fe;color:#4c1d95',
     'Dispute':'#fee2e2;color:#b91c1c','COA':'#e0f2fe;color:#075985',
@@ -271,7 +271,7 @@ const TNC = (() => {
   }
 
   // ── SUPPORT REQUESTS ────────────────────────────────────────────
-  const SUPPORT_KEY = 'tnc_v6_support';
+  const SUPPORT_KEY = 'ftk_v6_support';
   const SUPPORT_TYPES = ['Missing Data','Wrong Information','New Feature Request','Question','Other'];
 
   function addSupportRequest(text, type) {
@@ -333,35 +333,35 @@ const TNC = (() => {
       const type = document.getElementById('sup-type').value;
       if (!text) { toast('Please describe your request','warning'); return; }
       addSupportRequest(text, type);
-      toast('Request submitted — thank you!','success');
+      toast('Request submitted - thank you!','success');
       modal.classList.add('hidden');
     };
   }
 
   // ── GLOSSARY ──────────────────────────────────────────────────
   const GLOSSARY = {
-    'FXD':'Fixed — deal confirmed and locked in',
-    'SUBS':'On Subjects — provisionally agreed, awaiting final sign-off',
-    'HOLD':'On Hold — paused or under review',
-    'FLD':'Failed — deal fell through',
-    'TNC':'Confirmed - fixture brokered directly by the desk',
-    'CNR':'Charterer Not Reported — identity not disclosed',
-    'RNR':'Rate Not Reported — rate is confidential or unknown',
-    'PROG':'Progressed — terms still being negotiated',
+    'FXD':'Fixed - deal confirmed and locked in',
+    'SUBS':'On Subjects - provisionally agreed, awaiting final sign-off',
+    'HOLD':'On Hold - paused or under review',
+    'FLD':'Failed - deal fell through',
+    'DESK':'Confirmed - fixture brokered directly by the desk',
+    'CNR':'Charterer Not Reported - identity not disclosed',
+    'RNR':'Rate Not Reported - rate is confidential or unknown',
+    'PROG':'Progressed - terms still being negotiated',
     'CPP':'Clean Petroleum Products (gasoline, jet fuel, diesel)',
     'ULSD':'Ultra Low Sulfur Diesel',
-    'UMS':'Unmixed Supply — usually a fuel blend',
-    'NAP':'Naphtha — a light petroleum fraction',
+    'UMS':'Unmixed Supply - usually a fuel blend',
+    'NAP':'Naphtha - a light petroleum fraction',
     'JET':'Jet fuel (aviation fuel)',
     'USG':'US Gulf Coast (load region)',
-    'TA':'Transatlantic — destination across the Atlantic',
+    'TA':'Transatlantic - destination across the Atlantic',
     'CBS':'Caribbean / Bahamas / Suriname region',
     'ECM':'East Coast Mexico',
     'WCMEX':'West Coast Mexico',
-    'OPS':'Open Position — destination TBD',
-    'MT':'Metric Tons — vessel cargo size',
-    'MR':'Medium Range tanker (roughly 25,000–55,000 MT)',
-    'LAYCAN':'Laydays/Cancelling — the arrival window for the vessel',
+    'OPS':'Open Position - destination TBD',
+    'MT':'Metric Tons - vessel cargo size',
+    'MR':'Medium Range tanker (roughly 25,000-55,000 MT)',
+    'LAYCAN':'Laydays/Cancelling - the arrival window for the vessel',
   };
 
   // ── SIDEBAR ─────────────────────────────────────────────────────
@@ -387,7 +387,7 @@ const TNC = (() => {
     el.className = 'sidebar';
     el.innerHTML = `
       <div class="sb-brand"><div class="sb-brand-row">
-        <div class="sb-logo">TNC</div>
+        <div class="sb-logo">FT</div>
         <div><div class="sb-title">Fixture Tracker</div><div class="sb-sub">Sample data &middot; v6</div></div>
       </div></div>
       <nav class="sb-nav">
@@ -397,7 +397,7 @@ const TNC = (() => {
             ${it.badge!=null?`<span class="sb-badge">${it.badge}</span>`:''}
           </a>`).join('')}
         <div class="sb-divider"></div>
-        <button class="sb-item sb-support-btn" onclick="TNC.openSupportModal()" style="width:100%;text-align:left;background:none;border:none;cursor:pointer">
+        <button class="sb-item sb-support-btn" onclick="FTK.openSupportModal()" style="width:100%;text-align:left;background:none;border:none;cursor:pointer">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;opacity:.55"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span>Feedback &amp; Support</span>
           ${supportCount?`<span class="sb-badge" style="background:rgba(220,38,38,.3);color:#fca5a5">${supportCount}</span>`:''}
@@ -414,7 +414,7 @@ const TNC = (() => {
           const curTheme = document.documentElement.getAttribute('data-theme') || 'dark';
           const toggleIcon  = curTheme === 'dark' ? '☀️' : '🌙';
           const toggleLabel = curTheme === 'dark' ? 'Light mode' : 'Dark mode';
-          return `<button class="theme-toggle" onclick="window.TNC_toggleTheme()">
+          return `<button class="theme-toggle" onclick="window.FTK_toggleTheme()">
           <span class="theme-toggle-icon" id="theme-toggle-icon">${toggleIcon}</span>
           <span id="theme-toggle-label">${toggleLabel}</span>
         </button>`;
@@ -448,7 +448,7 @@ const TNC = (() => {
     );
   }
 
-  // ── v7: UNDO STACK (single-level — only last delete) ─────────
+  // ── v7: UNDO STACK (single-level - only last delete) ─────────
   let _undoStack = null; // { action:'delete', data: fixture }
 
   function pushUndo(action, data) {
@@ -482,7 +482,7 @@ const TNC = (() => {
     if (/K/i.test(r)) return 'LS';
     // Multi-leg: contains '/'
     if (/\d+\s*\/\s*\d+/.test(r)) return 'USD'; // USD/MT multi-leg
-    // WS: pure number 50–350 (Worldscale range)
+    // WS: pure number 50-350 (Worldscale range)
     const n = parseFloat(r);
     if (!isNaN(n) && n >= 50 && n <= 350) return 'WS';
     // USD/MT: numbers > 350
@@ -507,11 +507,11 @@ const TNC = (() => {
 
   // ── v7: AI BOX EXAMPLE QUERIES ───────────────────────────────
   const AI_EXAMPLES = [
-    'Show all TNC fixtures from Week 21',
+    'Show all desk fixtures from Week 21',
     'Compare ULSD rates USG → TA across all weeks',
     'Which vessels have failed the most this year?',
     'What was the average fix rate for Week 20 vs Week 23?',
-    'Find all TRAF charterer fixtures with CBS discharge',
+    'Find all VANTOR charterer fixtures with CBS discharge',
   ];
 
   // ── v7: SIDEBAR UPDATE ───────────────────────────────────────
@@ -526,7 +526,7 @@ const TNC = (() => {
   return {
     LIVE_WEEK,
     PRESET_CATEGORIES, TAG_COLORS, GLOSSARY, AI_EXAMPLES,
-    getHistorical, getLive, getImported, getAll, getTNCAll, getWeeks,
+    getHistorical, getLive, getImported, getAll, getFTKAll, getWeeks,
     addLive, updateLive, deleteLive: deleteLiveWithUndo, importWeek, resetLive,
     buildWeekStats,
     esc, statusBadge, cargoBadge, toast,
@@ -541,11 +541,11 @@ const TNC = (() => {
 })();
 
 // ── GLOBAL THEME TOGGLE ─────────────────────────────────────
-window.TNC_toggleTheme = function() {
+window.FTK_toggleTheme = function() {
   const cur  = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = cur === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('tnc_v7_theme', next);
+  localStorage.setItem('ftk_v7_theme', next);
   const icon  = document.getElementById('theme-toggle-icon');
   const label = document.getElementById('theme-toggle-label');
   if (icon)  icon.textContent  = next === 'dark' ? '☀️' : '🌙';

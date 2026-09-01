@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TNC — Charts &amp; Trends</title>
-<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<title>Fixture Tracker - Charts &amp; Trends</title>
+<script>(function(){var t=localStorage.getItem('ftk_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="../../assets/styles.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -17,7 +17,7 @@
     <div class="tb-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
     <div>
       <div class="tb-title">Charts &amp; Trends</div>
-      <div class="tb-sub">Weekly or quarterly analysis · 2025–2026 · Volume, routes, cargo, outcomes</div>
+      <div class="tb-sub">Weekly or quarterly analysis · 2025-2026 · Volume, routes, cargo, outcomes</div>
     </div>
   </div>
   <div class="tb-r">
@@ -37,7 +37,7 @@
             <button id="btn-week" onclick="setViewMode('week')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:var(--blue);color:#fff">Week</button>
             <button id="btn-quarter" onclick="setViewMode('quarter')" style="padding:5px 12px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:#fff;color:var(--g700)">Quarter</button>
           </div>
-          <span style="font-size:11px;color:var(--g400)">Quarter = 13 weeks (Q1=Wks 1–13, Q2=14–26, Q3=27–39, Q4=40–52)</span>
+          <span style="font-size:11px;color:var(--g400)">Quarter = 13 weeks (Q1=Wks 1-13, Q2=14-26, Q3=27-39, Q4=40-52)</span>
         </div>
         <div style="display:flex;align-items:center;gap:7px">
           <span style="font-size:12px;font-weight:700;color:var(--g600)">Year:</span>
@@ -48,8 +48,8 @@
           </select>
         </div>
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--g600);cursor:pointer">
-          <input type="checkbox" id="tnc-only" onchange="rebuildCharts()" style="accent-color:var(--blue)">
-          <strong>TNC fixtures only</strong>
+          <input type="checkbox" id="ftk-only" onchange="rebuildCharts()" style="accent-color:var(--blue)">
+          <strong>Desk fixtures only</strong>
         </label>
         <div style="display:flex;align-items:center;gap:7px">
           <span style="font-size:12px;font-weight:700;color:var(--g600)">Cargo:</span>
@@ -65,7 +65,7 @@
   <!-- Week / Quarter checkboxes -->
   <div class="card" id="checks-card" style="margin-bottom:14px">
     <div class="card-hdr">
-      <div><h3 id="checks-title">Weeks to Compare</h3><p id="checks-sub">Tick weeks on/off — charts update instantly</p></div>
+      <div><h3 id="checks-title">Weeks to Compare</h3><p id="checks-sub">Tick weeks on/off - charts update instantly</p></div>
       <div style="display:flex;gap:6px">
         <button class="btn btn-sm btn-ghost" onclick="selectAll(true)">All</button>
         <button class="btn btn-sm btn-ghost" onclick="selectAll(false)">None</button>
@@ -104,17 +104,17 @@
 </div>
 <div id="toast-stack" class="toast-stack"></div>
 
-<script>window.TNC_DEPTH = 2;</script>
+<script>window.FTK_DEPTH = 2;</script>
 <script src="../../assets/hist_data_2025.js"></script>
 <script src="../../assets/hist_data_2026.js"></script>
 <script src="../../assets/app.js"></script>
 <script>
-TNC.renderSidebar('compare');
+FTK.renderSidebar('compare');
 
 let viewMode = 'week';
 let selectedWeeks = new Set();
 let charts = {};
-const ALL_WEEKS_DATA = TNC.getWeeks();
+const ALL_WEEKS_DATA = FTK.getWeeks();
 
 // ── Dedup (prevent double-counting same vessel in same week) ──────
 function dedup(fixtures) {
@@ -134,10 +134,10 @@ function wkToQ(wk) {
   return 'Q' + (n<=13?1:n<=26?2:n<=39?3:4) + ' ' + yr;
 }
 
-function buildQuarterStats(tncOnly) {
+function buildQuarterStats(ftkOnly) {
   const yr = document.getElementById('year-filter').value;
   const weeks = yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA;
-  const wStats = TNC.buildWeekStats(weeks, tncOnly);
+  const wStats = FTK.buildWeekStats(weeks, ftkOnly);
   const B = {};
   wStats.forEach(s => {
     const q = wkToQ(s.week); if (!q) return;
@@ -171,7 +171,7 @@ function buildCheckboxes() {
     document.getElementById('checks-title').textContent = 'Weeks to Compare';
     document.getElementById('checks-sub').textContent = `${weeksInView.length} weeks available`;
     document.getElementById('wk-checks').innerHTML = weeksInView.map(wk => {
-      const isLive = wk === TNC.LIVE_WEEK;
+      const isLive = wk === FTK.LIVE_WEEK;
       const n = parseInt(wk.match(/WEEK (\d+)/)?.[1]||0);
       return `<label class="ch-chk" style="min-width:72px">
         <input type="checkbox" value="${wk}" ${selectedWeeks.has(wk)?'checked':''} onchange="toggleWeek('${wk}',this.checked)">
@@ -215,7 +215,7 @@ function onYearChange() {
 function resetFilters() {
   document.getElementById('year-filter').value='2026';
   document.getElementById('cargo-filter').value='';
-  document.getElementById('tnc-only').checked=false;
+  document.getElementById('ftk-only').checked=false;
   viewMode='week';
   setViewMode('week');
   const wks = ALL_WEEKS_DATA.filter(w=>w.includes('2026'));
@@ -225,25 +225,25 @@ function resetFilters() {
 
 // ── Get stats for current state ───────────────────────────────────
 function getStats() {
-  const tncOnly = document.getElementById('tnc-only').checked;
+  const ftkOnly = document.getElementById('ftk-only').checked;
   const cargo   = document.getElementById('cargo-filter').value;
 
   let stats;
   if (viewMode === 'quarter') {
-    stats = buildQuarterStats(tncOnly);
+    stats = buildQuarterStats(ftkOnly);
     // Filter by checked quarters
     const checked = new Set([...document.querySelectorAll('#wk-checks input:checked')].map(cb=>cb.dataset.q));
     stats = stats.filter(s=>checked.has(s.week));
   } else {
-    stats = TNC.buildWeekStats([...selectedWeeks], tncOnly);
+    stats = FTK.buildWeekStats([...selectedWeeks], ftkOnly);
   }
 
   if (!cargo) return stats;
   return stats.map(s => {
     const wk = s.week;
     let fx = viewMode==='quarter'
-      ? dedup(TNC.getHistorical().filter(f=>wkToQ(f.week)===wk))
-      : (wk===TNC.LIVE_WEEK ? TNC.getLive() : dedup([...TNC.getHistorical(),...TNC.getImported()].filter(f=>f.week===wk)));
+      ? dedup(FTK.getHistorical().filter(f=>wkToQ(f.week)===wk))
+      : (wk===FTK.LIVE_WEEK ? FTK.getLive() : dedup([...FTK.getHistorical(),...FTK.getImported()].filter(f=>f.week===wk)));
     fx = fx.filter(f=>(f.cargo||'').includes(cargo));
     return {...s,total:fx.length,fxd:fx.filter(f=>f.status==='FXD').length,
       fld:fx.filter(f=>['FLD','FAILED'].includes(f.status)).length,
@@ -254,16 +254,16 @@ function getStats() {
 
 // ── Unique vessel count ───────────────────────────────────────────
 function uniqueVessels() {
-  const tncOnly = document.getElementById('tnc-only').checked;
+  const ftkOnly = document.getElementById('ftk-only').checked;
   const yr = document.getElementById('year-filter').value;
   const weeksInView = viewMode==='quarter'
     ? (yr ? ALL_WEEKS_DATA.filter(w=>w.includes(yr)) : ALL_WEEKS_DATA)
     : [...selectedWeeks];
   let fx = dedup([
-    ...TNC.getHistorical().filter(f=>weeksInView.includes(f.week)),
-    ...TNC.getLive()
+    ...FTK.getHistorical().filter(f=>weeksInView.includes(f.week)),
+    ...FTK.getLive()
   ]);
-  if (tncOnly) fx = fx.filter(f=>f.tnc);
+  if (ftkOnly) fx = fx.filter(f=>f.ftk);
   return new Set(fx.map(f=>(f.vessel||'').trim().toUpperCase()).filter(Boolean)).size;
 }
 

@@ -19,7 +19,7 @@ import sys
 # on these produces noise, not leaks.
 IGNORE = {
     "TOTAL", "SUBS", "FXD", "FLD", "COA", "CNR", "TBN", "CHIP", "SUCCESS",
-    "PLACEHOLDER", "ON HOLD", "HOLD", "TRAF", "N/A", "PROG", "RNR",
+    "PLACEHOLDER", "ON HOLD", "HOLD", "N/A", "PROG", "RNR",
 }
 
 SKIP_DIRS = {".git", "node_modules"}

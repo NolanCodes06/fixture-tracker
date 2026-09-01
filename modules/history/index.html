@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>TNC — History Archive</title>
-<script>(function(){var t=localStorage.getItem('tnc_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<title>Fixture Tracker - History Archive</title>
+<script>(function(){var t=localStorage.getItem('ftk_v7_theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230d6efd'/%3E%3Ctext x='16' y='22' font-size='18' font-family='sans-serif' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="../../assets/styles.css"/>
 </head>
@@ -32,8 +32,8 @@
     <h2>Historical Fixture Archive</h2>
     <p>Browse all past weeks. Use the year filter to switch between 2025 and 2026, then click any week to expand it. Use the search box or other filters to narrow results.</p>
     <div class="ph-meta">
-      <span>📅 Weeks 1–52 · 2025 &nbsp;|&nbsp; Weeks 1–23 · 2026</span>
-      <span>📦 <strong id="hist-total-count">—</strong> total fixtures</span>
+      <span>📅 Weeks 1-52 · 2025 &nbsp;|&nbsp; Weeks 1-23 · 2026</span>
+      <span>📦 <strong id="hist-total-count">-</strong> total fixtures</span>
       <span>⚡ Rows load on demand for speed</span>
     </div>
   </div>
@@ -66,7 +66,7 @@
 
     <div class="srch-wrap" style="flex:1;min-width:180px">
       <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="hf-q" placeholder="Vessel, charterer, load port…" oninput="applyFilters()" style="padding:6px 10px 6px 30px;width:100%;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;outline:none;color:var(--g900)"/>
+      <input type="text" id="hf-q" placeholder="Vessel, charterer, load port..." oninput="applyFilters()" style="padding:6px 10px 6px 30px;width:100%;border:1px solid var(--g200);border-radius:var(--r);font-size:12.5px;outline:none;color:var(--g900)"/>
     </div>
 
     <button class="btn btn-sm btn-ghost" onclick="clearFilters()">Clear all</button>
@@ -86,19 +86,19 @@
 </div>
 <div id="toast-stack" class="toast-stack"></div>
 
-<script>window.TNC_DEPTH = 2;</script>
+<script>window.FTK_DEPTH = 2;</script>
 <script src="../../assets/hist_data_2025.js"></script>
 <script src="../../assets/hist_data_2026.js"></script>
 <script src="../../assets/app.js"></script>
 <script>
-TNC.renderSidebar('history');
+FTK.renderSidebar('history');
 
 // ── Data & state ─────────────────────────────────────────────────
-const hist = TNC.getHistorical();
+const hist = FTK.getHistorical();
 document.getElementById('hist-total-count').textContent = hist.length.toLocaleString();
 
 // Sorted week list (all historical, no live week)
-const ALL_WEEKS = TNC.getWeeks().filter(w => w !== TNC.LIVE_WEEK);
+const ALL_WEEKS = FTK.getWeeks().filter(w => w !== FTK.LIVE_WEEK);
 
 // Track which week sections have had rows rendered (lazy)
 const rendered = new Set();
@@ -177,10 +177,10 @@ function buildWeekHeaders() {
               <th>Cargo</th><th>Load Port</th><th>Destination</th>
               <th title="WS points or USD/MT">Rate</th>
               <th title="FXD=Fixed, SUBS=On Subs, FLD=Failed">Status</th>
-              <th>TNC</th>
+              <th>DESK</th>
             </tr></thead>
             <tbody id="hw-tbody-${wkIdx}">
-              <tr><td colspan="9" style="padding:14px 12px;color:var(--g400);font-size:12px;font-style:italic">Click to expand and load rows…</td></tr>
+              <tr><td colspan="9" style="padding:14px 12px;color:var(--g400);font-size:12px;font-style:italic">Click to expand and load rows...</td></tr>
             </tbody>
           </table>
         </div>
@@ -189,7 +189,7 @@ function buildWeekHeaders() {
   }).join('');
 }
 
-// ── Toggle expand — lazy renders rows on first open ───────────────
+// ── Toggle expand - lazy renders rows on first open ───────────────
 function toggleWeek(wkIdx, wk) {
   const body = document.getElementById(`hw-body-${wkIdx}`);
   if (!body) return;
@@ -197,7 +197,7 @@ function toggleWeek(wkIdx, wk) {
   body.classList.toggle('open', !isOpen);
 
   if (!isOpen && !rendered.has(wkIdx)) {
-    // First expand — render rows now
+    // First expand - render rows now
     const rows = getFilteredRows(wk);
     renderRows(wkIdx, wk, rows);
     rendered.add(wkIdx);
@@ -240,26 +240,26 @@ function renderRows(wkIdx, wk, rows) {
     <div class="hs-i">ULSD: <strong>${ulsd}</strong></div>
     <div class="hs-i">Fix rate: <strong>${rows.length ? Math.round(fxd/rows.length*100) : 0}%</strong></div>`;
 
-  const na = v => (!v || v === 'N/A') ? '—' : TNC.esc(v);
+  const na = v => (!v || v === 'N/A') ? '-' : FTK.esc(v);
   const shown = rows.slice(0, 150);
   tbody.innerHTML = shown.map(r => {
-    const chips = TNC.renderTagChips(r.id, true);
+    const chips = FTK.renderTagChips(r.id, true);
     return `<tr>
-      <td class="td-m">${TNC.esc(r.window)||'—'}</td>
-      <td class="td-v">${TNC.esc(r.vessel)}${chips ? `<span style="margin-left:4px">${chips}</span>` : ''}</td>
+      <td class="td-m">${FTK.esc(r.window)||'-'}</td>
+      <td class="td-v">${FTK.esc(r.vessel)}${chips ? `<span style="margin-left:4px">${chips}</span>` : ''}</td>
       <td class="td-m">${na(r.charterer)}</td>
-      <td>${TNC.cargoBadge(r.cargo)}</td>
+      <td>${FTK.cargoBadge(r.cargo)}</td>
       <td class="td-m">${na(r.load)}</td>
-      <td class="td-m" title="${TNC.esc(r.discharge)}">${na(r.discharge)}</td>
-      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${TNC.esc(r.rate)}">${na(r.rate)}</td>
-      <td>${TNC.statusBadge(r.status)}</td>
-      <td>${r.tnc ? '<span class="badge b-tnc" style="font-size:9px">TNC</span>' : ''}</td>
+      <td class="td-m" title="${FTK.esc(r.discharge)}">${na(r.discharge)}</td>
+      <td style="font-size:12px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${FTK.esc(r.rate)}">${na(r.rate)}</td>
+      <td>${FTK.statusBadge(r.status)}</td>
+      <td>${r.ftk ? '<span class="badge b-ftk" style="font-size:9px">DESK</span>' : ''}</td>
     </tr>`;
   }).join('');
 
   if (rows.length > 150) {
     tbody.innerHTML += `<tr><td colspan="9" style="padding:9px 12px;font-size:11.5px;color:var(--g400)">
-      Showing 150 of ${rows.length} — <a href="../../modules/search/index.html" style="color:var(--blue)">use Search</a> to see all</td></tr>`;
+      Showing 150 of ${rows.length} - <a href="../../modules/search/index.html" style="color:var(--blue)">use Search</a> to see all</td></tr>`;
   }
   if (rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="9" style="padding:14px 12px;color:var(--g400);font-size:12px;text-align:center">No fixtures match the current filters for this week</td></tr>`;
@@ -302,7 +302,7 @@ function applyFilters() {
       renderRows(wkIdx, wk, rows);
       rendered.add(wkIdx);
     } else if (rendered.has(wkIdx)) {
-      // Was rendered before but filters changed — mark dirty so it re-renders on next open
+      // Was rendered before but filters changed - mark dirty so it re-renders on next open
       rendered.delete(wkIdx);
     }
 
