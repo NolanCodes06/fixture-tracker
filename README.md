@@ -4,7 +4,7 @@ A browser tool for looking at tanker fixture data week by week. Dashboard,
 charts, a searchable archive, a side by side week comparison, an editable live
 week, and a spreadsheet import.
 
-I built this during a summer internship at a shipbroker. Their week lived in a
+I built this during a two week internship at a shipbroker in June 2026. Their week lived in a
 spreadsheet that got emailed around, and answering a question like "what did
 this charterer pay on this route in March" meant opening twelve files. So this
 loads the whole history at once and lets you filter it.
